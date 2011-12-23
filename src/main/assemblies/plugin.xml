@@ -14,10 +14,5 @@
                 <exclude>org.elasticsearch:elasticsearch</exclude>
             </excludes>
         </dependencySet>
-        <dependencySet>
-            <outputDirectory>/</outputDirectory>
-            <useProjectArtifact>true</useProjectArtifact>
-            <useTransitiveFiltering>true</useTransitiveFiltering>
-        </dependencySet>
     </dependencySets>
 </assembly>

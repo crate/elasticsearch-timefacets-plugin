@@ -1,8 +1,8 @@
 
 package com.lovelysystems.facet.uncached.datehistogram;
 
-import gnu.trove.impl.Constants;
-import gnu.trove.map.hash.TObjectIntHashMap;
+import org.elasticsearch.common.trove.impl.Constants;
+import org.elasticsearch.common.trove.map.hash.TObjectIntHashMap;
 import org.elasticsearch.common.collect.MapBuilder;
 import org.elasticsearch.common.component.AbstractComponent;
 import org.elasticsearch.common.inject.Inject;
