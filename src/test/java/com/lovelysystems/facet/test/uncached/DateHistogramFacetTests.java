@@ -62,14 +62,14 @@ public class DateHistogramFacetTests extends AbstractNodes {
         XContentBuilder facetQuery = XContentFactory.contentBuilder(XContentType.JSON)
                 .startObject()
                 .startObject("int_result")
-                .startObject("uncached_histogram")
+                .startObject("uncached_date_histogram")
                 .field("field", "created_at")
                 .field("valueField", "total")
                 .field("interval", "week")
                 .endObject()
                 .endObject()
                 .startObject("long_result")
-                .startObject("uncached_histogram")
+                .startObject("uncached_date_histogram")
                 .field("field", "created_at")
                 .field("valueField", "more")
                 .field("interval", "week")
@@ -87,7 +87,7 @@ public class DateHistogramFacetTests extends AbstractNodes {
         facet.toXContent(builder, ToXContent.EMPTY_PARAMS).endObject();
         assertThat(builder.string(), equalTo(
                 "{\"int_result\":{" +
-                        "\"_type\":\"uncached_histogram\"," +
+                        "\"_type\":\"uncached_date_histogram\"," +
                         "\"entries\":[" +
                         "{" +
                         "\"time\":950400000," +
@@ -105,7 +105,7 @@ public class DateHistogramFacetTests extends AbstractNodes {
         facet.toXContent(builder, ToXContent.EMPTY_PARAMS).endObject();
         assertThat(builder.string(), equalTo(
                 "{\"long_result\":{" +
-                        "\"_type\":\"uncached_histogram\"," +
+                        "\"_type\":\"uncached_date_histogram\"," +
                         "\"entries\":[" +
                         "{" +
                         "\"time\":950400000," +
@@ -168,14 +168,14 @@ public class DateHistogramFacetTests extends AbstractNodes {
         XContentBuilder facetQuery = XContentFactory.contentBuilder(XContentType.JSON)
                 .startObject()
                 .startObject("int_result")
-                .startObject("uncached_histogram")
+                .startObject("uncached_date_histogram")
                 .field("field", "created_at")
                 .field("valueField", "total")
                 .field("interval", "week")
                 .endObject()
                 .endObject()
                 .startObject("long_result")
-                .startObject("uncached_histogram")
+                .startObject("uncached_date_histogram")
                 .field("field", "created_at")
                 .field("valueField", "more")
                 .field("interval", "week")
@@ -193,7 +193,7 @@ public class DateHistogramFacetTests extends AbstractNodes {
         facet.toXContent(builder, ToXContent.EMPTY_PARAMS).endObject();
         assertThat(builder.string(), equalTo(
                 "{\"int_result\":{" +
-                        "\"_type\":\"uncached_histogram\"," +
+                        "\"_type\":\"uncached_date_histogram\"," +
                         "\"entries\":[" +
                         "{" +
                         "\"time\":950400000," +

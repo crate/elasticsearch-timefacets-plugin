@@ -19,7 +19,7 @@ public class InternalFullDateHistogramFacet extends InternalDateHistogramFacet {
 
     private static final String STREAM_TYPE = "fdUncachedHistogram";
 
-    public static final String TYPE = "uncached_histogram";
+    public static final String TYPE = "uncached_date_histogram";
 
     public static void registerStreams() {
         Streams.registerStream(STREAM, STREAM_TYPE);
