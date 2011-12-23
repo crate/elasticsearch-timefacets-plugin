@@ -3,6 +3,7 @@ package com.lovelysystems.facet.test.uncached;
 
 import com.lovelysystems.facet.test.AbstractNodes;
 import com.lovelysystems.facet.uncached.datehistogram.InternalFullDateHistogramFacet;
+import org.elasticsearch.action.search.SearchPhaseExecutionException;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
@@ -13,6 +14,7 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -28,6 +30,7 @@ public class DateHistogramFacetTests extends AbstractNodes {
     public void createNodes() throws Exception {
         startNode("server1");
         client = getClient();
+        setupTemplates(client);
     }
 
     @AfterClass
@@ -36,40 +39,17 @@ public class DateHistogramFacetTests extends AbstractNodes {
         closeAllNodes();
     }
 
+    @AfterMethod
+    public void tearDownData() {
+        client.admin().indices().prepareDelete("data_1").execute().actionGet();
+    }
+
     protected Client getClient() {
         return client("server1");
     }
 
-
     @Test
-    public void testIt() throws Exception {
-        String settings = XContentFactory.jsonBuilder()
-                .startObject()
-                .field("number_of_shards", 4)
-                .field("number_of_replicas", 0)
-                .startArray("aliases").value("data").endArray()
-                .endObject().string();
-        String mapping = XContentFactory.jsonBuilder()
-                .startObject()
-                .startObject("data")
-                .startObject("_all").field("enabled", false).endObject()
-                .startObject("_source").field("enabled", false).endObject()
-                .startObject("properties")
-                .startObject("created_at").field("type", "date").field("store", "yes").endObject()
-                .startObject("total").field("type", "integer").field("store", "yes").endObject()
-                .startObject("more").field("type", "long").field("store", "yes").endObject()
-                .endObject()
-                .endObject()
-                .endObject().string();
-
-        client.admin().indices().preparePutTemplate("data")
-                .setTemplate("data_*")
-                .setSettings(settings)
-                .addMapping("data", mapping)
-                .execute().actionGet();
-
-        Thread.sleep(100); // sleep a bit here..., so the mappings get applied
-
+    public void testSimple() throws Exception {
         client.prepareIndex("data_1", "data", "1")
                 .setSource(XContentFactory.jsonBuilder()
                         .startObject()
@@ -155,13 +135,61 @@ public class DateHistogramFacetTests extends AbstractNodes {
                         .endObject())
                 .execute().actionGet();
         client.admin().indices().refresh(refreshRequest()).actionGet();
-        response = client.prepareSearch()
-                .setSearchType(SearchType.COUNT)
-                .setFacets(facetQuery.copiedBytes())
+    }
+
+    @Test
+    public void testMultidata() throws Exception {
+        client.prepareIndex("data_1", "data", "1")
+                .setSource(XContentFactory.jsonBuilder()
+                        .startObject()
+                        .field("created_at", 1000000000)
+                        .field("total", 2)
+                        .field("more", 5)
+                        .endObject())
                 .execute().actionGet();
+        client.prepareIndex("data_1", "data", "2")
+                .setSource(XContentFactory.jsonBuilder()
+                        .startObject()
+                        .field("created_at", 1000000000)
+                        .field("total", 5)
+                        .field("more", 5)
+                        .endObject())
+                .execute().actionGet();
+        client.prepareIndex("data_1", "data", "3")
+                .setSource(XContentFactory.jsonBuilder()
+                        .startObject()
+                        .field("created_at", 2000000000)
+                        .field("total", 3)
+                        .field("more", 3)
+                        .endObject())
+                .execute().actionGet();
+        client.admin().indices().refresh(refreshRequest()).actionGet();
+
+        XContentBuilder facetQuery = XContentFactory.contentBuilder(XContentType.JSON)
+                .startObject()
+                .startObject("int_result")
+                .startObject("uncached_histogram")
+                .field("field", "created_at")
+                .field("valueField", "total")
+                .field("interval", "week")
+                .endObject()
+                .endObject()
+                .startObject("long_result")
+                .startObject("uncached_histogram")
+                .field("field", "created_at")
+                .field("valueField", "more")
+                .field("interval", "week")
+                .endObject()
+                .endObject()
+                .endObject();
+
+        SearchResponse response = client.prepareSearch()
+                    .setSearchType(SearchType.COUNT)
+                    .setFacets(facetQuery.copiedBytes())
+                    .execute().actionGet();
         MatcherAssert.assertThat(response.shardFailures().length, Matchers.equalTo(0));
-        facet = (InternalFullDateHistogramFacet) response.facets().facet("int_result");
-        builder = XContentFactory.contentBuilder(XContentType.JSON).startObject();
+        InternalFullDateHistogramFacet facet = (InternalFullDateHistogramFacet) response.facets().facet("int_result");
+        XContentBuilder builder = XContentFactory.contentBuilder(XContentType.JSON).startObject();
         facet.toXContent(builder, ToXContent.EMPTY_PARAMS).endObject();
         assertThat(builder.string(), equalTo(
                 "{\"int_result\":{" +
