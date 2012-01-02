@@ -112,7 +112,7 @@ public abstract class AbstractNodes {
     public void setupTemplates(Client client) throws Exception {
         String settings = XContentFactory.jsonBuilder()
                 .startObject()
-                .field("number_of_shards", 4)
+                .field("number_of_shards", 2)
                 .field("number_of_replicas", 0)
                 .startArray("aliases").value("data").endArray()
                 .endObject().string();

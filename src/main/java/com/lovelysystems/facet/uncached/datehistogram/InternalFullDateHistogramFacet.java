@@ -301,7 +301,7 @@ public class InternalFullDateHistogramFacet extends InternalDateHistogramFacet {
         int size = in.readVInt();
         entries = new ArrayList<FullEntry>(size);
         for (int i = 0; i < size; i++) {
-            entries.add(new FullEntry(in.readLong(), in.readVLong(), in.readVLong(), in.readVLong(), in.readVLong(), in.readVLong()));
+            entries.add(new FullEntry(in.readLong(), in.readVLong(), in.readLong(), in.readLong(), in.readVLong(), in.readLong()));
         }
     }
 
@@ -313,10 +313,10 @@ public class InternalFullDateHistogramFacet extends InternalDateHistogramFacet {
         for (FullEntry entry : entries) {
             out.writeLong(entry.time);
             out.writeVLong(entry.count);
-            out.writeVLong(entry.min);
-            out.writeVLong(entry.max);
+            out.writeLong(entry.min);
+            out.writeLong(entry.max);
             out.writeVLong(entry.totalCount);
-            out.writeVLong(entry.total);
+            out.writeLong(entry.total);
         }
         releaseCache();
     }

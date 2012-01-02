@@ -29,6 +29,7 @@ public class DateHistogramFacetTests extends AbstractNodes {
     @BeforeClass
     public void createNodes() throws Exception {
         startNode("server1");
+        startNode("server2");
         client = getClient();
         setupTemplates(client);
     }
@@ -163,6 +164,22 @@ public class DateHistogramFacetTests extends AbstractNodes {
                         .field("more", 3)
                         .endObject())
                 .execute().actionGet();
+        client.prepareIndex("data_1", "data", "4")
+                .setSource(XContentFactory.jsonBuilder()
+                        .startObject()
+                        .field("created_at", 2000000000)
+                        .field("total", -24)
+                        .field("more", -24)
+                        .endObject())
+                .execute().actionGet();
+        client.prepareIndex("data_1", "data", "5")
+                .setSource(XContentFactory.jsonBuilder()
+                        .startObject()
+                        .field("created_at", 2000000000)
+                        .field("total", -24)
+                        .field("more", -24)
+                        .endObject())
+                .execute().actionGet();
         client.admin().indices().refresh(refreshRequest()).actionGet();
 
         XContentBuilder facetQuery = XContentFactory.contentBuilder(XContentType.JSON)
@@ -205,12 +222,12 @@ public class DateHistogramFacetTests extends AbstractNodes {
                         "\"mean\":3.5" +
                         "},{" +
                         "\"time\":1555200000," +
-                        "\"count\":1," +
-                        "\"min\":3," +
+                        "\"count\":3," +
+                        "\"min\":-24," +
                         "\"max\":3," +
-                        "\"total\":3," +
-                        "\"total_count\":1," +
-                        "\"mean\":3.0" +
+                        "\"total\":-45," +
+                        "\"total_count\":3," +
+                        "\"mean\":-15.0" +
                         "}]" +
                         "}}"));
     }
