@@ -124,6 +124,7 @@ public abstract class AbstractNodes {
                 .startObject("properties")
                 .startObject("created_at").field("type", "date").field("store", "yes").endObject()
                 .startObject("total").field("type", "integer").field("store", "yes").endObject()
+                .startObject("floattotal").field("type", "float").field("store", "yes").endObject()
                 .startObject("more").field("type", "long").field("store", "yes").endObject()
                 .startObject("notstored").field("type", "long").field("store", "no").endObject()
                 .endObject()

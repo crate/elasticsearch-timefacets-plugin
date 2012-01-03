@@ -93,9 +93,9 @@ public class DateHistogramFacetTests extends AbstractNodes {
                         "{" +
                         "\"time\":950400000," +
                         "\"count\":1," +
-                        "\"min\":2," +
-                        "\"max\":2," +
-                        "\"total\":2," +
+                        "\"min\":2.0," +
+                        "\"max\":2.0," +
+                        "\"total\":2.0," +
                         "\"total_count\":1," +
                         "\"mean\":2.0" +
                         "}]" +
@@ -111,9 +111,9 @@ public class DateHistogramFacetTests extends AbstractNodes {
                         "{" +
                         "\"time\":950400000," +
                         "\"count\":1," +
-                        "\"min\":5," +
-                        "\"max\":5," +
-                        "\"total\":5," +
+                        "\"min\":5.0," +
+                        "\"max\":5.0," +
+                        "\"total\":5.0," +
                         "\"total_count\":1," +
                         "\"mean\":5.0" +
                         "}]" +
@@ -145,7 +145,8 @@ public class DateHistogramFacetTests extends AbstractNodes {
                         .startObject()
                         .field("created_at", 1000000000)
                         .field("total", 2)
-                        .field("more", 5)
+                        .field("floattotal", 2.0)
+                        .field("more", 2)
                         .endObject())
                 .execute().actionGet();
         client.prepareIndex("data_1", "data", "2")
@@ -153,6 +154,7 @@ public class DateHistogramFacetTests extends AbstractNodes {
                         .startObject()
                         .field("created_at", 1000000000)
                         .field("total", 5)
+                        .field("floattotal", 5.0)
                         .field("more", 5)
                         .endObject())
                 .execute().actionGet();
@@ -161,6 +163,7 @@ public class DateHistogramFacetTests extends AbstractNodes {
                         .startObject()
                         .field("created_at", 2000000000)
                         .field("total", 3)
+                        .field("floattotal", 3.0)
                         .field("more", 3)
                         .endObject())
                 .execute().actionGet();
@@ -169,6 +172,7 @@ public class DateHistogramFacetTests extends AbstractNodes {
                         .startObject()
                         .field("created_at", 2000000000)
                         .field("total", -24)
+                        .field("floattotal", -24.0)
                         .field("more", -24)
                         .endObject())
                 .execute().actionGet();
@@ -177,6 +181,7 @@ public class DateHistogramFacetTests extends AbstractNodes {
                         .startObject()
                         .field("created_at", 2000000000)
                         .field("total", -24)
+                        .field("floattotal", -24.0)
                         .field("more", -24)
                         .endObject())
                 .execute().actionGet();
@@ -198,6 +203,13 @@ public class DateHistogramFacetTests extends AbstractNodes {
                 .field("interval", "week")
                 .endObject()
                 .endObject()
+                .startObject("float_result")
+                .startObject("uncached_date_histogram")
+                .field("field", "created_at")
+                .field("valueField", "floattotal")
+                .field("interval", "week")
+                .endObject()
+                .endObject()
                 .endObject();
 
         SearchResponse response = client.prepareSearch()
@@ -215,17 +227,67 @@ public class DateHistogramFacetTests extends AbstractNodes {
                         "{" +
                         "\"time\":950400000," +
                         "\"count\":2," +
-                        "\"min\":2," +
-                        "\"max\":5," +
-                        "\"total\":7," +
+                        "\"min\":2.0," +
+                        "\"max\":5.0," +
+                        "\"total\":7.0," +
                         "\"total_count\":2," +
                         "\"mean\":3.5" +
                         "},{" +
                         "\"time\":1555200000," +
                         "\"count\":3," +
-                        "\"min\":-24," +
-                        "\"max\":3," +
-                        "\"total\":-45," +
+                        "\"min\":-24.0," +
+                        "\"max\":3.0," +
+                        "\"total\":-45.0," +
+                        "\"total_count\":3," +
+                        "\"mean\":-15.0" +
+                        "}]" +
+                        "}}"));
+        facet = (InternalFullDateHistogramFacet) response.facets().facet("long_result");
+        builder = XContentFactory.contentBuilder(XContentType.JSON).startObject();
+        facet.toXContent(builder, ToXContent.EMPTY_PARAMS).endObject();
+        assertThat(builder.string(), equalTo(
+                "{\"long_result\":{" +
+                        "\"_type\":\"uncached_date_histogram\"," +
+                        "\"entries\":[" +
+                        "{" +
+                        "\"time\":950400000," +
+                        "\"count\":2," +
+                        "\"min\":2.0," +
+                        "\"max\":5.0," +
+                        "\"total\":7.0," +
+                        "\"total_count\":2," +
+                        "\"mean\":3.5" +
+                        "},{" +
+                        "\"time\":1555200000," +
+                        "\"count\":3," +
+                        "\"min\":-24.0," +
+                        "\"max\":3.0," +
+                        "\"total\":-45.0," +
+                        "\"total_count\":3," +
+                        "\"mean\":-15.0" +
+                        "}]" +
+                        "}}"));
+        facet = (InternalFullDateHistogramFacet) response.facets().facet("float_result");
+        builder = XContentFactory.contentBuilder(XContentType.JSON).startObject();
+        facet.toXContent(builder, ToXContent.EMPTY_PARAMS).endObject();
+        assertThat(builder.string(), equalTo(
+                "{\"float_result\":{" +
+                        "\"_type\":\"uncached_date_histogram\"," +
+                        "\"entries\":[" +
+                        "{" +
+                        "\"time\":950400000," +
+                        "\"count\":2," +
+                        "\"min\":2.0," +
+                        "\"max\":5.0," +
+                        "\"total\":7.0," +
+                        "\"total_count\":2," +
+                        "\"mean\":3.5" +
+                        "},{" +
+                        "\"time\":1555200000," +
+                        "\"count\":3," +
+                        "\"min\":-24.0," +
+                        "\"max\":3.0," +
+                        "\"total\":-45.0," +
                         "\"total_count\":3," +
                         "\"mean\":-15.0" +
                         "}]" +

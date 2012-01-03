@@ -45,11 +45,11 @@ public class InternalFullDateHistogramFacet extends InternalDateHistogramFacet {
         private final long time;
         long count;
         long totalCount;
-        long total;
-        long min = Long.MIN_VALUE;
-        long max = Long.MAX_VALUE;
+        double total;
+        double min = Double.POSITIVE_INFINITY;
+        double max = Double.NEGATIVE_INFINITY;
 
-        public FullEntry(long time, long count, long min, long max, long totalCount, long total) {
+        public FullEntry(long time, long count, double min, double max, long totalCount, double total) {
             this.time = time;
             this.count = count;
             this.min = min;
@@ -274,9 +274,9 @@ public class InternalFullDateHistogramFacet extends InternalDateHistogramFacet {
             builder.startObject();
             builder.field(Fields.TIME, entry.time());
             builder.field(Fields.COUNT, entry.count());
-            builder.field(Fields.MIN, (long) entry.min());
-            builder.field(Fields.MAX, (long) entry.max());
-            builder.field(Fields.TOTAL, (long) entry.total());
+            builder.field(Fields.MIN, entry.min());
+            builder.field(Fields.MAX, entry.max());
+            builder.field(Fields.TOTAL, entry.total());
             builder.field(Fields.TOTAL_COUNT, entry.totalCount());
             builder.field(Fields.MEAN, entry.mean());
             builder.endObject();
@@ -301,7 +301,7 @@ public class InternalFullDateHistogramFacet extends InternalDateHistogramFacet {
         int size = in.readVInt();
         entries = new ArrayList<FullEntry>(size);
         for (int i = 0; i < size; i++) {
-            entries.add(new FullEntry(in.readLong(), in.readVLong(), in.readLong(), in.readLong(), in.readVLong(), in.readLong()));
+            entries.add(new FullEntry(in.readLong(), in.readVLong(), in.readDouble(), in.readDouble(), in.readVLong(), in.readDouble()));
         }
     }
 
@@ -313,10 +313,10 @@ public class InternalFullDateHistogramFacet extends InternalDateHistogramFacet {
         for (FullEntry entry : entries) {
             out.writeLong(entry.time);
             out.writeVLong(entry.count);
-            out.writeLong(entry.min);
-            out.writeLong(entry.max);
+            out.writeDouble(entry.min);
+            out.writeDouble(entry.max);
             out.writeVLong(entry.totalCount);
-            out.writeLong(entry.total);
+            out.writeDouble(entry.total);
         }
         releaseCache();
     }

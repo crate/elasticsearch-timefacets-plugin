@@ -74,10 +74,13 @@ public class DateHistogramFacetCollector extends AbstractFacetCollector {
         if (mapper == null) {
             throw new FacetPhaseExecutionException(facetName, "No mapping found for value_field [" + valueFieldName + "]");
         }
-        if (   (mapper.fieldDataType() != FieldDataType.DefaultTypes.INT)
-            && (mapper.fieldDataType() != FieldDataType.DefaultTypes.LONG)
+        FieldDataType fdt = mapper.fieldDataType();
+        if (   (fdt != FieldDataType.DefaultTypes.INT)
+                && (fdt != FieldDataType.DefaultTypes.LONG)
+                && (fdt != FieldDataType.DefaultTypes.FLOAT)
+                && (fdt != FieldDataType.DefaultTypes.DOUBLE)
            ) {
-            throw new FacetPhaseExecutionException(facetName, "(value) field [" + valueFieldName + "] is not of type int or long");
+            throw new FacetPhaseExecutionException(facetName, "(value) field [" + valueFieldName + "] is not of type int,long or float");
         }
         valueIndexFieldName = mapper.names().indexName();
 
@@ -133,11 +136,15 @@ public class DateHistogramFacetCollector extends AbstractFacetCollector {
             List<Object> o = ((FieldLookup) doc.get(fieldName)).getValues();
             for (Object v : o) {
                 entry.totalCount++;
-                long value;
+                double value;
                 if (v instanceof Integer) {
                     value = (Integer) v;
-                } else {
+                } else if (v instanceof Long) {
                     value = (Long) v;
+                } else if (v instanceof Double) {
+                    value = (Double) v;
+                } else {
+                    value = (Float) v;
                 }
                 entry.total += value;
                 if (value < entry.min) {
