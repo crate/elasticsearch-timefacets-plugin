@@ -172,8 +172,10 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
         assertThat(builder.string(), equalTo(
             "{\"distinct\":{" +
                 "\"_type\":\"distinct_date_histogram\",\"entries\":[" +
-                    "{\"time\":950400000,\"count\":1}" +
-                    "]}" +
+                        "{\"time\":950400000,\"count\":1}" +
+                    "]," +
+                    "\"count\":1" +
+                    "}" +
             "}"));
 
         client.prepareIndex("distinct_data_1", "data", "2")
@@ -195,8 +197,10 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
         assertThat(builder.string(), equalTo(
             "{\"distinct\":{" +
                 "\"_type\":\"distinct_date_histogram\",\"entries\":[" +
-                "{\"time\":950400000,\"count\":2}" +
-                "]}" +
+                    "{\"time\":950400000,\"count\":2}" +
+                "]," +
+                "\"count\":2" +
+                "}" +
             "}"));
 
            client.prepareIndex("distinct_data_1", "data", "3")
@@ -232,9 +236,11 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
         assertThat(builder.string(), equalTo(
                 "{\"distinct\":{" +
                         "\"_type\":\"distinct_date_histogram\",\"entries\":[" +
-                        "{\"time\":950400000,\"count\":2}," +
-                        "{\"time\":1555200000,\"count\":3}" +
-                        "]}" +
+                            "{\"time\":950400000,\"count\":2}," +
+                            "{\"time\":1555200000,\"count\":3}" +
+                        "]," +
+                        "\"count\":4" +
+                        "}" +
                         "}"));
     }
 }

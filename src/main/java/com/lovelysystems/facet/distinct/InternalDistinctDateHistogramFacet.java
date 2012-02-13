@@ -237,6 +237,7 @@ public class InternalDistinctDateHistogramFacet extends InternalDateHistogramFac
         static final XContentBuilderString ENTRIES = new XContentBuilderString("entries");
         static final XContentBuilderString TIME = new XContentBuilderString("time");
         static final XContentBuilderString COUNT = new XContentBuilderString("count");
+        static final XContentBuilderString TOTAL_COUNT = new XContentBuilderString("count");
     }
 
     /**
@@ -245,6 +246,10 @@ public class InternalDistinctDateHistogramFacet extends InternalDateHistogramFac
      * For each time entry we provide the number of distinct values in the time range.
      */
     @Override public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        Set<String> all = null;
+        if (entries().size() != 1) {
+            all = new HashSet<String>();
+        }
         builder.startObject(name);
         builder.field(Fields._TYPE, TYPE);
         builder.startArray(Fields.ENTRIES);
@@ -253,8 +258,14 @@ public class InternalDistinctDateHistogramFacet extends InternalDateHistogramFac
             builder.field(Fields.TIME, entry.time());
             builder.field(Fields.COUNT, entry.count());
             builder.endObject();
+            if (entries().size() == 1) {
+                all = entry.value();
+            } else {
+                all.addAll(entry.value());
+            }
         }
         builder.endArray();
+        builder.field(Fields.TOTAL_COUNT, all.size());
         builder.endObject();
         return builder;
     }
