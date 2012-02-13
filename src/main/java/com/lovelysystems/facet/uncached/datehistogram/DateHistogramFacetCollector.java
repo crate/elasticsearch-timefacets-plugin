@@ -31,7 +31,6 @@ public class DateHistogramFacetCollector extends AbstractFacetCollector {
     private final String valueIndexFieldName;
 
     private MutableDateTime dateTime;
-    private final long interval;
 
     private final DateHistogramFacet.ComparatorType comparatorType;
 
@@ -53,7 +52,6 @@ public class DateHistogramFacetCollector extends AbstractFacetCollector {
                                       ) {
         super(facetName);
         this.dateTime = dateTime;
-        this.interval = interval;
         this.comparatorType = comparatorType;
         this.fieldDataCache = context.fieldDataCache();
 

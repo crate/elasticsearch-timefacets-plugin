@@ -49,6 +49,36 @@ public class DateHistogramFacetTests extends AbstractNodes {
         return client("server1");
     }
 
+    public void setupTemplates(Client client) throws Exception {
+        String settings = XContentFactory.jsonBuilder()
+                .startObject()
+                .field("number_of_shards", 2)
+                .field("number_of_replicas", 0)
+                .startArray("aliases").value("data").endArray()
+                .endObject().string();
+        String mapping = XContentFactory.jsonBuilder()
+                .startObject()
+                .startObject("data")
+                .startObject("_all").field("enabled", false).endObject()
+                .startObject("_source").field("enabled", false).endObject()
+                .startObject("properties")
+                .startObject("created_at").field("type", "date").field("store", "yes").endObject()
+                .startObject("total").field("type", "integer").field("store", "yes").endObject()
+                .startObject("floattotal").field("type", "float").field("store", "yes").endObject()
+                .startObject("more").field("type", "long").field("store", "yes").endObject()
+                .startObject("notstored").field("type", "long").field("store", "no").endObject()
+                .startObject("distinct").field("type", "string").field("store", "yes").endObject()
+                .endObject()
+                .endObject()
+                .endObject().string();
+        client.admin().indices().preparePutTemplate("data")
+                .setTemplate("data_*")
+                .setSettings(settings)
+                .addMapping("data", mapping)
+                .execute().actionGet();
+        Thread.sleep(100); // sleep a bit here..., so the mappings get applied
+    }
+
     @Test
     public void testSimple() throws Exception {
         client.prepareIndex("data_1", "data", "1")
@@ -59,7 +89,7 @@ public class DateHistogramFacetTests extends AbstractNodes {
                         .field("more", 5)
                         .endObject())
                 .execute().actionGet();
-        client.admin().indices().refresh(refreshRequest()).actionGet();
+        client.admin().indices().prepareFlush().setRefresh(true).execute().actionGet();
         XContentBuilder facetQuery = XContentFactory.contentBuilder(XContentType.JSON)
                 .startObject()
                 .startObject("int_result")

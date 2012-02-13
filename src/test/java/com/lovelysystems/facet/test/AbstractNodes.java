@@ -108,35 +108,4 @@ public abstract class AbstractNodes {
         }
         nodes.clear();
     }
-
-    public void setupTemplates(Client client) throws Exception {
-        String settings = XContentFactory.jsonBuilder()
-                .startObject()
-                .field("number_of_shards", 2)
-                .field("number_of_replicas", 0)
-                .startArray("aliases").value("data").endArray()
-                .endObject().string();
-        String mapping = XContentFactory.jsonBuilder()
-                .startObject()
-                .startObject("data")
-                .startObject("_all").field("enabled", false).endObject()
-                .startObject("_source").field("enabled", false).endObject()
-                .startObject("properties")
-                .startObject("created_at").field("type", "date").field("store", "yes").endObject()
-                .startObject("total").field("type", "integer").field("store", "yes").endObject()
-                .startObject("floattotal").field("type", "float").field("store", "yes").endObject()
-                .startObject("more").field("type", "long").field("store", "yes").endObject()
-                .startObject("notstored").field("type", "long").field("store", "no").endObject()
-                .endObject()
-                .endObject()
-                .endObject().string();
-
-        client.admin().indices().preparePutTemplate("data")
-                .setTemplate("data_*")
-                .setSettings(settings)
-                .addMapping("data", mapping)
-                .execute().actionGet();
-
-        Thread.sleep(100); // sleep a bit here..., so the mappings get applied
-    }
 }
