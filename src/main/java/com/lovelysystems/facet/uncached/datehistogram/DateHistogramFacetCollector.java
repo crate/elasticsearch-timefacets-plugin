@@ -1,7 +1,11 @@
 package com.lovelysystems.facet.uncached.datehistogram;
 
+import java.io.IOException;
+import java.util.List;
+
 import org.apache.lucene.index.IndexReader;
 import org.elasticsearch.common.CacheRecycler;
+import org.elasticsearch.common.joda.time.MutableDateTime;
 import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.index.cache.field.data.FieldDataCache;
 import org.elasticsearch.index.field.data.FieldDataType;
@@ -11,16 +15,11 @@ import org.elasticsearch.index.mapper.MapperService;
 import org.elasticsearch.search.facet.AbstractFacetCollector;
 import org.elasticsearch.search.facet.Facet;
 import org.elasticsearch.search.facet.FacetPhaseExecutionException;
-import org.elasticsearch.search.facet.datehistogram.CountDateHistogramFacetCollector;
 import org.elasticsearch.search.facet.datehistogram.DateHistogramFacet;
 import org.elasticsearch.search.internal.SearchContext;
-import org.elasticsearch.common.joda.time.MutableDateTime;
 import org.elasticsearch.search.lookup.FieldLookup;
 import org.elasticsearch.search.lookup.FieldsLookup;
 import org.elasticsearch.search.lookup.SearchLookup;
-
-import java.io.IOException;
-import java.util.List;
 
 /**
  * A histogram facet collector that uses different fields for the key and the value.
@@ -121,7 +120,7 @@ public class DateHistogramFacetCollector extends AbstractFacetCollector {
         public void onValue(int docId, MutableDateTime dateTime) {
             long time = dateTime.getMillis();
             if (interval != 1) {
-                time = CountDateHistogramFacetCollector.bucket(time, interval);
+                time = ((time / interval) * interval);
             }
 
             InternalFullDateHistogramFacet.FullEntry entry = entries.get(time);

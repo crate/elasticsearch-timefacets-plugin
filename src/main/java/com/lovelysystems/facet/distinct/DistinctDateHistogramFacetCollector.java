@@ -1,12 +1,13 @@
 package com.lovelysystems.facet.distinct;
 
+import java.io.IOException;
+
 import org.apache.lucene.index.IndexReader;
 import org.elasticsearch.common.CacheRecycler;
 import org.elasticsearch.common.joda.time.MutableDateTime;
 import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.index.cache.field.data.FieldDataCache;
 import org.elasticsearch.index.field.data.FieldDataType;
-import org.elasticsearch.index.field.data.NumericFieldData;
 import org.elasticsearch.index.field.data.longs.LongFieldData;
 import org.elasticsearch.index.field.data.strings.StringFieldData;
 import org.elasticsearch.index.mapper.FieldMapper;
@@ -14,15 +15,8 @@ import org.elasticsearch.index.mapper.MapperService;
 import org.elasticsearch.search.facet.AbstractFacetCollector;
 import org.elasticsearch.search.facet.Facet;
 import org.elasticsearch.search.facet.FacetPhaseExecutionException;
-import org.elasticsearch.search.facet.datehistogram.CountDateHistogramFacetCollector;
 import org.elasticsearch.search.facet.datehistogram.DateHistogramFacet;
 import org.elasticsearch.search.internal.SearchContext;
-import org.elasticsearch.search.lookup.FieldLookup;
-import org.elasticsearch.search.lookup.FieldsLookup;
-import org.elasticsearch.search.lookup.SearchLookup;
-
-import java.io.IOException;
-import java.util.List;
 
 /**
  * Collect the distinct values per time interval.
@@ -113,7 +107,7 @@ public class DistinctDateHistogramFacetCollector extends AbstractFacetCollector 
         @Override public void onValue(int docId, MutableDateTime dateTime) {
             long time = dateTime.getMillis();
             if (interval != 1) {
-                time = CountDateHistogramFacetCollector.bucket(time, interval);
+                time = ((time / interval) * interval);
             }
 
             InternalDistinctDateHistogramFacet.DistinctEntry entry = entries.get(time);
