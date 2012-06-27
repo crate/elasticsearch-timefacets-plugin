@@ -79,6 +79,59 @@ Works like the "date_histogram" with these exceptions:
     - value_field must be String
     - no value_script
 
+"Latest" Facet
+==============
+
+This facet collapses matching documents to ``key_field`` and uses only
+the document with the highest value of ``ts_field``.
+ The result is always sorted on descending ``value_field``.
+
+Example::
+
+  {"query": { "match_all":{}},
+   "facets": {
+      "l": {
+       "latest": {
+        "size": 100,
+        "start": 50,
+        "key_field": "mykey",
+        "value_field": "num_comments",
+        "ts_field": "created_at"
+      }
+    }
+   }}
+
+Result::
+
+  "facets" : {
+    "l" : {
+      "_type" : "latest",
+      "entries" : [ {
+        "value" : 52127,
+        "key" : 5758683603492929880,
+        "ts" : 1325577893000
+      }, {
+        "value" : 14980,
+        "key" : 5758683371564695759,
+        "ts" : 1325447138000
+      }, {
+        "value" : 10392,
+        "key" : 5758683603492929669,
+        "ts" : 1325577885000
+      } ]
+    }
+  }
+
+Restrictions of the "Latest" facet
+----------------------------------
+
+Documents need to be routed in a way that the same values of
+``key_field`` are on the same shard. This can be accomplished by
+setting the ``_routing`` attribute upon indexing. This is needed for
+performance reasons, so the fields can be collapsed per shard.
+
+Currently the ``key_field`` and ``ts_field`` need to be longs, while
+the ``value_field`` is required to be of type integer.
 
 Maven
 =====

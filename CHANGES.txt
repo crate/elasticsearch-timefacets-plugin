@@ -1,0 +1,10 @@
+===============================================
+Changes for Lovelysystems Elasticsearch Plugins
+===============================================
+
+2012/06/27 0.3.0
+================
+
+ - added "Latest" facet
+
+ - elasticsearch 0.19.x compatibility

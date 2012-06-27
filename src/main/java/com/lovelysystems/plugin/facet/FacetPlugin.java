@@ -2,6 +2,8 @@ package com.lovelysystems.plugin.facet;
 
 import com.lovelysystems.facet.distinct.DistinctDateHistogramFacetProcessor;
 import com.lovelysystems.facet.distinct.InternalDistinctDateHistogramFacet;
+import com.lovelysystems.facet.latest.InternalLatestFacet;
+import com.lovelysystems.facet.latest.LatestFacetProcessor;
 import com.lovelysystems.facet.uncached.datehistogram.DateHistogramFacetProcessor;
 import com.lovelysystems.facet.uncached.datehistogram.InternalFullDateHistogramFacet;
 import org.elasticsearch.common.inject.Module;
@@ -34,6 +36,9 @@ public class FacetPlugin extends AbstractPlugin {
             InternalFullDateHistogramFacet.registerStreams();
             ((FacetModule) module).addFacetProcessor(DistinctDateHistogramFacetProcessor.class);
             InternalDistinctDateHistogramFacet.registerStreams();
+            ((FacetModule) module).addFacetProcessor(LatestFacetProcessor.class);
+            InternalLatestFacet.registerStreams();
+            
         }
     }
 }
