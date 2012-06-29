@@ -106,6 +106,7 @@ Result::
   "facets" : {
     "l" : {
       "_type" : "latest",
+      "total": 25,
       "entries" : [ {
         "value" : 52127,
         "key" : 5758683603492929880,

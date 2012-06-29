@@ -101,7 +101,7 @@ public class LatestFacetTests extends AbstractNodes {
                 .setFacets(facetQuery.copiedBytes()).execute().actionGet();
         InternalLatestFacet facet = (InternalLatestFacet) response.facets()
                 .facet("facetname");
-        String expected = "{\"facetname\":{\"_type\":\"latest\","
+        String expected = "{\"facetname\":{\"_type\":\"latest\",\"total\":25,"
                 + "\"entries\":[" + "{\"value\":310,\"key\":22,\"ts\":900022},"
                 + "{\"value\":300,\"key\":21,\"ts\":900021},"
                 + "{\"value\":290,\"key\":20,\"ts\":900020},"

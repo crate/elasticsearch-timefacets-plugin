@@ -141,7 +141,8 @@ public class LatestFacetCollector extends AbstractFacetCollector {
 
     @Override
     public Facet facet() {
-        InternalLatestFacet f = new InternalLatestFacet(facetName, size, start);
+        InternalLatestFacet f = new InternalLatestFacet(facetName, size, start,
+                aggregator.entries.size());
         f.insert(aggregator.entries);
         return f;
     }

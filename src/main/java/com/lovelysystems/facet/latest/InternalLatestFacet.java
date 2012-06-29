@@ -38,8 +38,7 @@ public class InternalLatestFacet implements InternalFacet {
     private String name;
     private int size;
     private int start;
-    private int value;
-    private long ts;
+    private int total = 0;
 
     public EntryPriorityQueue queue;
 
@@ -72,10 +71,11 @@ public class InternalLatestFacet implements InternalFacet {
         });
     }
 
-    public InternalLatestFacet(String facetName, int size, int start) {
+    public InternalLatestFacet(String facetName, int size, int start, int total) {
         this.size = size;
         this.start = start;
         this.name = facetName;
+        this.total = total;
     }
 
     @Override
@@ -96,10 +96,6 @@ public class InternalLatestFacet implements InternalFacet {
     @Override
     public String getType() {
         return type();
-    }
-
-    public long getTS() {
-        return ts;
     }
 
     public static class Entry {
@@ -132,6 +128,7 @@ public class InternalLatestFacet implements InternalFacet {
             while (f.queue.size() > 0) {
                 queue.insertWithOverflow(f.queue.pop());
             }
+            this.total += f.total;
         }
         return this;
     }
@@ -140,6 +137,7 @@ public class InternalLatestFacet implements InternalFacet {
         static final XContentBuilderString _TYPE = new XContentBuilderString(
                 "_type");
         static final XContentBuilderString TS = new XContentBuilderString("ts");
+        static final XContentBuilderString TOTAL = new XContentBuilderString("total");
         static final XContentBuilderString ENTRIES = new XContentBuilderString(
                 "entries");
         static final XContentBuilderString KEY = new XContentBuilderString(
@@ -154,20 +152,25 @@ public class InternalLatestFacet implements InternalFacet {
 
         builder.startObject(name);
         builder.field(Fields._TYPE, TYPE);
+        builder.field(Fields.TOTAL, total);
         builder.startArray(Fields.ENTRIES);
+        int num_entries = queue.size() - start;
 
-        Entry[] entries = new Entry[queue.size() - start];
-        for (int i = entries.length - 1; i >= 0; i--) {
-            entries[i] = queue.pop();
+        if (num_entries > 0) {
+            Entry[] entries = new Entry[num_entries];
+            for (int i = entries.length - 1; i >= 0; i--) {
+                entries[i] = queue.pop();
+            }
+            for (int i = 0; i < entries.length; i++) {
+                Entry e = entries[i];
+                builder.startObject();
+                builder.field(Fields.VALUE, e.value);
+                builder.field(Fields.KEY, e.key);
+                builder.field(Fields.TS, e.ts);
+                builder.endObject();
+            }
         }
-        for (int i = 0; i < entries.length; i++) {
-            Entry e = entries[i];
-            builder.startObject();
-            builder.field(Fields.VALUE, e.value);
-            builder.field(Fields.KEY, e.key);
-            builder.field(Fields.TS, e.ts);
-            builder.endObject();
-        }
+
         builder.endArray();
         builder.endObject();
         return builder;
@@ -185,6 +188,7 @@ public class InternalLatestFacet implements InternalFacet {
         this.name = in.readUTF();
         this.size = in.readVInt();
         this.start = in.readVInt();
+        this.total = in.readVInt();
         this.queue = new EntryPriorityQueue(start + size);
         int size = in.readVInt();
         for (int i = 0; i < size; i++) {
@@ -198,6 +202,7 @@ public class InternalLatestFacet implements InternalFacet {
         out.writeUTF(name);
         out.writeVInt(size);
         out.writeVInt(start);
+        out.writeVInt(total);
         out.writeVInt(queue.size());
         while (queue.size() > 0) {
             Entry e = queue.pop();
