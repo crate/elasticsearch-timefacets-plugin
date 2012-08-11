@@ -64,7 +64,8 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
                 .startObject("properties")
                 .startObject("created_at").field("type", "date").field("store", "yes").endObject()
                 .startObject("distinct").field("type", "string").field("store", "yes").endObject()
-                .startObject("wrong_type").field("type", "long").field("store", "yes").endObject()
+                .startObject("wrong_type").field("type", "float").field("store", "yes").endObject()
+                .startObject("long_type").field("type", "long").field("store", "yes").endObject()
                 .endObject()
                 .endObject()
                 .endObject().string();
@@ -75,7 +76,7 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
                 .execute().actionGet();
         Thread.sleep(100); // sleep a bit here..., so the mappings get applied
     }
-    
+
     public void flush() {
         client.admin().indices().prepareFlush().setRefresh(true).execute().actionGet();
         client.admin().indices().prepareRefresh().execute().actionGet();
@@ -92,18 +93,18 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
                         .startObject()
                         .field("created_at", 1000000000)
                         .field("distinct", "1")
-                        .field("wrong_type", 1)
+                        .field("wrong_type", 1.1)
                         .endObject())
                 .execute().actionGet();
         flush();
         XContentBuilder facetQuery = XContentFactory.contentBuilder(XContentType.JSON)
                 .startObject()
                 .startObject("distinct")
-                    .startObject("distinct_date_histogram")
-                        .field("field", "distinct")
-                        .field("value_field", "wrong_type")
-                        .field("interval", "week")
-                    .endObject()
+                .startObject("distinct_date_histogram")
+                .field("field", "distinct")
+                .field("value_field", "wrong_type")
+                .field("interval", "week")
+                .endObject()
                 .endObject()
                 .endObject();
 
@@ -120,7 +121,7 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
                         .startObject()
                         .field("created_at", 1000000000)
                         .field("distinct", "1")
-                        .field("wrong_type", 1)
+                        .field("wrong_type", 1.1)
                         .endObject())
                 .execute().actionGet();
         flush();
@@ -142,13 +143,13 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
     }
 
     @Test
-    public void testDistinct() throws Exception {
+    public void testDistinctString() throws Exception {
         client.prepareIndex("distinct_data_1", "data", "1")
                 .setSource(XContentFactory.jsonBuilder()
                         .startObject()
                         .field("created_at", 1000000000)
                         .field("distinct", "1")
-                        .field("wrong_type", 1)
+                        .field("wrong_type", 1.1)
                         .endObject())
                 .execute().actionGet();
         flush();
@@ -170,20 +171,20 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
         XContentBuilder builder = XContentFactory.contentBuilder(XContentType.JSON).startObject();
         facet.toXContent(builder, ToXContent.EMPTY_PARAMS).endObject();
         assertThat(builder.string(), equalTo(
-            "{\"distinct\":{" +
-                "\"_type\":\"distinct_date_histogram\",\"entries\":[" +
+                "{\"distinct\":{" +
+                        "\"_type\":\"distinct_date_histogram\",\"entries\":[" +
                         "{\"time\":950400000,\"count\":1}" +
-                    "]," +
-                    "\"count\":1" +
-                    "}" +
-            "}"));
+                        "]," +
+                        "\"count\":1" +
+                        "}" +
+                        "}"));
 
         client.prepareIndex("distinct_data_1", "data", "2")
                 .setSource(XContentFactory.jsonBuilder()
                         .startObject()
                         .field("created_at", 1000000000)
                         .field("distinct", "2")
-                        .field("wrong_type", 1)
+                        .field("wrong_type", 1.1)
                         .endObject())
                 .execute().actionGet();
         flush();
@@ -195,36 +196,36 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
         builder = XContentFactory.contentBuilder(XContentType.JSON).startObject();
         facet.toXContent(builder, ToXContent.EMPTY_PARAMS).endObject();
         assertThat(builder.string(), equalTo(
-            "{\"distinct\":{" +
-                "\"_type\":\"distinct_date_histogram\",\"entries\":[" +
-                    "{\"time\":950400000,\"count\":2}" +
-                "]," +
-                "\"count\":2" +
-                "}" +
-            "}"));
+                "{\"distinct\":{" +
+                        "\"_type\":\"distinct_date_histogram\",\"entries\":[" +
+                        "{\"time\":950400000,\"count\":2}" +
+                        "]," +
+                        "\"count\":2" +
+                        "}" +
+                        "}"));
 
-           client.prepareIndex("distinct_data_1", "data", "3")
-                   .setSource(XContentFactory.jsonBuilder()
-                           .startObject()
-                           .field("created_at", 2000000000)
-                           .startArray("distinct")
-                           .value("2")
-                           .value("3")
-                           .endArray()
-                           .field("wrong_type", 1)
-                           .endObject())
-                   .execute().actionGet();
-           client.prepareIndex("distinct_data_1", "data", "4")
-                   .setSource(XContentFactory.jsonBuilder()
-                           .startObject()
-                           .field("created_at", 2000000000)
-                           .startArray("distinct")
-                           .value("3")
-                           .value("4")
-                           .endArray()
-                           .field("wrong_type", 1)
-                           .endObject())
-                   .execute().actionGet();
+        client.prepareIndex("distinct_data_1", "data", "3")
+                .setSource(XContentFactory.jsonBuilder()
+                        .startObject()
+                        .field("created_at", 2000000000)
+                        .startArray("distinct")
+                        .value("2")
+                        .value("3")
+                        .endArray()
+                        .field("wrong_type", 1.1)
+                        .endObject())
+                .execute().actionGet();
+        client.prepareIndex("distinct_data_1", "data", "4")
+                .setSource(XContentFactory.jsonBuilder()
+                        .startObject()
+                        .field("created_at", 2000000000)
+                        .startArray("distinct")
+                        .value("3")
+                        .value("4")
+                        .endArray()
+                        .field("wrong_type", 1.1)
+                        .endObject())
+                .execute().actionGet();
         flush();
         response = client.prepareSearch()
                 .setSearchType(SearchType.COUNT)
@@ -236,8 +237,107 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
         assertThat(builder.string(), equalTo(
                 "{\"distinct\":{" +
                         "\"_type\":\"distinct_date_histogram\",\"entries\":[" +
-                            "{\"time\":950400000,\"count\":2}," +
-                            "{\"time\":1555200000,\"count\":3}" +
+                        "{\"time\":950400000,\"count\":2}," +
+                        "{\"time\":1555200000,\"count\":3}" +
+                        "]," +
+                        "\"count\":4" +
+                        "}" +
+                        "}"));
+    }
+
+    @Test
+    public void testDistinctLong() throws Exception {
+        client.prepareIndex("distinct_data_1", "data", "1")
+                .setSource(XContentFactory.jsonBuilder()
+                        .startObject()
+                        .field("created_at", 1000000000)
+                        .field("long_type", 1)
+                        .endObject())
+                .execute().actionGet();
+        flush();
+        XContentBuilder facetQuery = XContentFactory.contentBuilder(XContentType.JSON)
+                .startObject()
+                .startObject("distinct")
+                .startObject("distinct_date_histogram")
+                .field("field", "created_at")
+                .field("value_field", "long_type")
+                .field("interval", "week")
+                .endObject()
+                .endObject()
+                .endObject();
+        SearchResponse response = client.prepareSearch()
+                .setSearchType(SearchType.COUNT)
+                .setFacets(facetQuery.copiedBytes())
+                .execute().actionGet();
+        InternalDistinctDateHistogramFacet facet = (InternalDistinctDateHistogramFacet) response.facets().facet("distinct");
+        XContentBuilder builder = XContentFactory.contentBuilder(XContentType.JSON).startObject();
+        facet.toXContent(builder, ToXContent.EMPTY_PARAMS).endObject();
+        assertThat(builder.string(), equalTo(
+                "{\"distinct\":{" +
+                        "\"_type\":\"distinct_date_histogram\",\"entries\":[" +
+                        "{\"time\":950400000,\"count\":1}" +
+                        "]," +
+                        "\"count\":1" +
+                        "}" +
+                        "}"));
+
+        client.prepareIndex("distinct_data_1", "data", "2")
+                .setSource(XContentFactory.jsonBuilder()
+                        .startObject()
+                        .field("created_at", 1000000000)
+                        .field("long_type", 2)
+                        .endObject())
+                .execute().actionGet();
+        flush();
+        response = client.prepareSearch()
+                .setSearchType(SearchType.COUNT)
+                .setFacets(facetQuery.copiedBytes())
+                .execute().actionGet();
+        facet = (InternalDistinctDateHistogramFacet) response.facets().facet("distinct");
+        builder = XContentFactory.contentBuilder(XContentType.JSON).startObject();
+        facet.toXContent(builder, ToXContent.EMPTY_PARAMS).endObject();
+        assertThat(builder.string(), equalTo(
+                "{\"distinct\":{" +
+                        "\"_type\":\"distinct_date_histogram\",\"entries\":[" +
+                        "{\"time\":950400000,\"count\":2}" +
+                        "]," +
+                        "\"count\":2" +
+                        "}" +
+                        "}"));
+
+        client.prepareIndex("distinct_data_1", "data", "3")
+                .setSource(XContentFactory.jsonBuilder()
+                        .startObject()
+                        .field("created_at", 2000000000)
+                        .startArray("long_type")
+                        .value(2)
+                        .value(3)
+                        .endArray()
+                        .endObject())
+                .execute().actionGet();
+        client.prepareIndex("distinct_data_1", "data", "4")
+                .setSource(XContentFactory.jsonBuilder()
+                        .startObject()
+                        .field("created_at", 2000000000)
+                        .startArray("long_type")
+                        .value(3)
+                        .value(4)
+                        .endArray()
+                        .endObject())
+                .execute().actionGet();
+        flush();
+        response = client.prepareSearch()
+                .setSearchType(SearchType.COUNT)
+                .setFacets(facetQuery.copiedBytes())
+                .execute().actionGet();
+        facet = (InternalDistinctDateHistogramFacet) response.facets().facet("distinct");
+        builder = XContentFactory.contentBuilder(XContentType.JSON).startObject();
+        facet.toXContent(builder, ToXContent.EMPTY_PARAMS).endObject();
+        assertThat(builder.string(), equalTo(
+                "{\"distinct\":{" +
+                        "\"_type\":\"distinct_date_histogram\",\"entries\":[" +
+                        "{\"time\":950400000,\"count\":2}," +
+                        "{\"time\":1555200000,\"count\":3}" +
                         "]," +
                         "\"count\":4" +
                         "}" +

@@ -40,7 +40,7 @@ Works like the "date_histogram" with these exceptions:
 Distinct Date Histogram Facet
 =============================
 
-This facet counts distinct values for string fields.
+This facet counts distinct values for string and long fields.
 
 Example::
 
@@ -70,8 +70,8 @@ Result::
      "count":4
  }
 
-The "count" is the number of distinct values in the time period. The outer "count" is the number of total distinct
-values.
+The "count" is the number of distinct values in the time period. The
+outer "count" is the number of total distinct values.
 
 Works like the "date_histogram" with these exceptions:
 

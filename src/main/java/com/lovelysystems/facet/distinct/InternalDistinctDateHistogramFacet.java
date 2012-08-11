@@ -51,16 +51,16 @@ public class InternalDistinctDateHistogramFacet extends InternalDateHistogramFac
      */
     public static class DistinctEntry implements Entry {
         private final long time;
-        private final Set<String> values;
+        private final Set<Object> values;
 
-        public DistinctEntry(long time, Set<String> values) {
+        public DistinctEntry(long time, Set<Object> values) {
             this.time = time;
             this.values = values;
         }
 
         public DistinctEntry(long time) {
             this.time = time;
-            this.values = new HashSet<String>();
+            this.values = new HashSet<Object>();
         }
 
         @Override public long time() {
@@ -71,11 +71,11 @@ public class InternalDistinctDateHistogramFacet extends InternalDateHistogramFac
             return time();
         }
 
-        public Set<String> value() {
+        public Set<Object> value() {
             return this.values;
         }
 
-        public Set<String> getValue() {
+        public Set<Object> getValue() {
             return value();
         }
 
@@ -128,9 +128,9 @@ public class InternalDistinctDateHistogramFacet extends InternalDateHistogramFac
         }
     }
 
-    private String name;
+    protected String name;
 
-    private ComparatorType comparatorType;
+    protected ComparatorType comparatorType;
 
     ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> tEntries;
     boolean cachedEntries;
@@ -246,9 +246,9 @@ public class InternalDistinctDateHistogramFacet extends InternalDateHistogramFac
      * For each time entry we provide the number of distinct values in the time range.
      */
     @Override public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        Set<String> all = null;
+        Set<Object> all = null;
         if (entries().size() != 1) {
-            all = new HashSet<String>();
+            all = new HashSet<Object>();
         }
         builder.startObject(name);
         builder.field(Fields._TYPE, TYPE);
@@ -289,7 +289,7 @@ public class InternalDistinctDateHistogramFacet extends InternalDateHistogramFac
         for (int i = 0; i < size; i++) {
             long time = in.readLong();
             int nameSize = in.readVInt();
-            Set<String> names = new HashSet<String>(nameSize);
+            Set<Object> names = new HashSet<Object>(nameSize);
             for (int j = 0; j < nameSize; j++) {
                 names.add(in.readUTF());
             }
@@ -307,8 +307,9 @@ public class InternalDistinctDateHistogramFacet extends InternalDateHistogramFac
         for (DistinctEntry entry : entries) {
             out.writeLong(entry.time);
             out.writeVInt(entry.getValue().size());
-            for (String name : entry.getValue()) {
-                out.writeUTF(name);
+
+            for (Object name : entry.getValue()) {
+                out.writeUTF((String) name);
             }
         }
         releaseCache();

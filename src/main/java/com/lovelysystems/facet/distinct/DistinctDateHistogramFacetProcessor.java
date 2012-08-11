@@ -66,11 +66,13 @@ public class DistinctDateHistogramFacetProcessor extends AbstractComponent imple
     }
 
 
-    @Override public String[] types() {
+    @Override
+    public String[] types() {
         return new String[]{InternalDistinctDateHistogramFacet.TYPE};
     }
 
-    @Override public FacetCollector parse(String facetName, XContentParser parser, SearchContext context) throws IOException {
+    @Override
+    public FacetCollector parse(String facetName, XContentParser parser, SearchContext context) throws IOException {
         String keyField = null;
         String distinctField = null;
         boolean intervalSet = false;
@@ -136,9 +138,6 @@ public class DistinctDateHistogramFacetProcessor extends AbstractComponent imple
         if (mapper == null) {
             throw new FacetPhaseExecutionException(facetName, "no mapping found for " + distinctField);
         }
-        if (mapper.fieldDataType() != FieldDataType.DefaultTypes.STRING) {
-            throw new FacetPhaseExecutionException(facetName, "distinct field [" + distinctField + "] is not of type string");
-        }
 
         if (!intervalSet) {
             throw new FacetPhaseExecutionException(facetName, "[interval] is required to be set for distinct histogram facet");
@@ -174,10 +173,23 @@ public class DistinctDateHistogramFacetProcessor extends AbstractComponent imple
                 }
             }
         }
-        return new DistinctDateHistogramFacetCollector(facetName, keyField, distinctField, dateTime, interval, comparatorType, context);
+
+
+        if (mapper.fieldDataType() == FieldDataType.DefaultTypes.STRING) {
+            return new DistinctDateHistogramFacetCollector(facetName, keyField, distinctField, dateTime, interval, comparatorType, context);
+
+        } else if (mapper.fieldDataType() == FieldDataType.DefaultTypes.LONG) {
+            return new LongDistinctDateHistogramFacetCollector(facetName, keyField, distinctField, dateTime, interval, comparatorType, context);
+
+        } else {
+            throw new FacetPhaseExecutionException(facetName, "distinct field [" + distinctField + "] is not of type string or long");
+        }
+
+
     }
 
-    @Override public Facet reduce(String name, List<Facet> facets) {
+    @Override
+    public Facet reduce(String name, List<Facet> facets) {
         InternalDistinctDateHistogramFacet first = (InternalDistinctDateHistogramFacet) facets.get(0);
         return first.reduce(name, facets);
     }
@@ -187,43 +199,50 @@ public class DistinctDateHistogramFacetProcessor extends AbstractComponent imple
         DateTimeField parse(Chronology chronology);
 
         static class WeekOfWeekyear implements DateFieldParser {
-            @Override public DateTimeField parse(Chronology chronology) {
+            @Override
+            public DateTimeField parse(Chronology chronology) {
                 return chronology.weekOfWeekyear();
             }
         }
 
         static class YearOfCentury implements DateFieldParser {
-            @Override public DateTimeField parse(Chronology chronology) {
+            @Override
+            public DateTimeField parse(Chronology chronology) {
                 return chronology.yearOfCentury();
             }
         }
 
         static class MonthOfYear implements DateFieldParser {
-            @Override public DateTimeField parse(Chronology chronology) {
+            @Override
+            public DateTimeField parse(Chronology chronology) {
                 return chronology.monthOfYear();
             }
         }
 
         static class DayOfMonth implements DateFieldParser {
-            @Override public DateTimeField parse(Chronology chronology) {
+            @Override
+            public DateTimeField parse(Chronology chronology) {
                 return chronology.dayOfMonth();
             }
         }
 
         static class HourOfDay implements DateFieldParser {
-            @Override public DateTimeField parse(Chronology chronology) {
+            @Override
+            public DateTimeField parse(Chronology chronology) {
                 return chronology.hourOfDay();
             }
         }
 
         static class MinuteOfHour implements DateFieldParser {
-            @Override public DateTimeField parse(Chronology chronology) {
+            @Override
+            public DateTimeField parse(Chronology chronology) {
                 return chronology.minuteOfHour();
             }
         }
 
         static class SecondOfMinute implements DateFieldParser {
-            @Override public DateTimeField parse(Chronology chronology) {
+            @Override
+            public DateTimeField parse(Chronology chronology) {
                 return chronology.secondOfMinute();
             }
         }

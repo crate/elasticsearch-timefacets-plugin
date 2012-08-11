@@ -2,6 +2,11 @@
 Changes for Lovelysystems Elasticsearch Plugins
 ===============================================
 
+unreleased
+==========
+
+ - added Long type support to distinct date histogram facet
+
 2012/06/29 0.3.1
 ================
 
