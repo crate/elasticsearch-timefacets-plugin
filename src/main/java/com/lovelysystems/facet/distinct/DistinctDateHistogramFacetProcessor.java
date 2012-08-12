@@ -68,7 +68,7 @@ public class DistinctDateHistogramFacetProcessor extends AbstractComponent imple
 
     @Override
     public String[] types() {
-        return new String[]{InternalDistinctDateHistogramFacet.TYPE};
+        return new String[]{StringInternalDistinctDateHistogramFacet.TYPE, LongInternalDistinctDateHistogramFacet.TYPE};
     }
 
     @Override
@@ -176,7 +176,7 @@ public class DistinctDateHistogramFacetProcessor extends AbstractComponent imple
 
 
         if (mapper.fieldDataType() == FieldDataType.DefaultTypes.STRING) {
-            return new DistinctDateHistogramFacetCollector(facetName, keyField, distinctField, dateTime, interval, comparatorType, context);
+            return new StringDistinctDateHistogramFacetCollector(facetName, keyField, distinctField, dateTime, interval, comparatorType, context);
 
         } else if (mapper.fieldDataType() == FieldDataType.DefaultTypes.LONG) {
             return new LongDistinctDateHistogramFacetCollector(facetName, keyField, distinctField, dateTime, interval, comparatorType, context);

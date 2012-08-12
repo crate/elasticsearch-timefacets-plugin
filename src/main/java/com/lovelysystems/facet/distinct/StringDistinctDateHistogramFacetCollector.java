@@ -1,7 +1,5 @@
 package com.lovelysystems.facet.distinct;
 
-import java.io.IOException;
-
 import org.apache.lucene.index.IndexReader;
 import org.elasticsearch.common.CacheRecycler;
 import org.elasticsearch.common.joda.time.MutableDateTime;
@@ -18,12 +16,14 @@ import org.elasticsearch.search.facet.FacetPhaseExecutionException;
 import org.elasticsearch.search.facet.datehistogram.DateHistogramFacet;
 import org.elasticsearch.search.internal.SearchContext;
 
+import java.io.IOException;
+
 /**
  * Collect the distinct values per time interval.
  *
  * Field cache is used for the key and the value field.
  */
-public class DistinctDateHistogramFacetCollector extends AbstractFacetCollector {
+public class StringDistinctDateHistogramFacetCollector extends AbstractFacetCollector {
 
     private final String keyIndexFieldName;
     private final String valueIndexFieldName;
@@ -40,7 +40,7 @@ public class DistinctDateHistogramFacetCollector extends AbstractFacetCollector 
 
     private final DateHistogramProc histoProc;
 
-    public DistinctDateHistogramFacetCollector(String facetName, String keyFieldName, String distinctFieldName, MutableDateTime dateTime, long interval, DateHistogramFacet.ComparatorType comparatorType, SearchContext context) {
+    public StringDistinctDateHistogramFacetCollector(String facetName, String keyFieldName, String distinctFieldName, MutableDateTime dateTime, long interval, DateHistogramFacet.ComparatorType comparatorType, SearchContext context) {
         super(facetName);
         this.dateTime = dateTime;
         this.comparatorType = comparatorType;
@@ -80,7 +80,7 @@ public class DistinctDateHistogramFacetCollector extends AbstractFacetCollector 
     }
 
     @Override public Facet facet() {
-        return new InternalDistinctDateHistogramFacet(facetName, comparatorType, histoProc.entries, true);
+        return new LongInternalDistinctDateHistogramFacet(facetName, comparatorType, histoProc.entries, true);
     }
 
     /**

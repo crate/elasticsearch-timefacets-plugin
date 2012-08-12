@@ -2,6 +2,11 @@
 Changes for Lovelysystems Elasticsearch Plugins
 ===============================================
 
+unreleased
+==========
+
+ - fix stream handling in distinct date histogram
+
 2012/08/11 0.4.0
 ================
 

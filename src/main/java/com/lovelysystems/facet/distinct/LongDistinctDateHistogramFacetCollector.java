@@ -7,7 +7,6 @@ import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.index.cache.field.data.FieldDataCache;
 import org.elasticsearch.index.field.data.FieldDataType;
 import org.elasticsearch.index.field.data.longs.LongFieldData;
-import org.elasticsearch.index.field.data.strings.StringFieldData;
 import org.elasticsearch.index.mapper.FieldMapper;
 import org.elasticsearch.index.mapper.MapperService;
 import org.elasticsearch.search.facet.AbstractFacetCollector;
@@ -80,7 +79,7 @@ public class LongDistinctDateHistogramFacetCollector extends AbstractFacetCollec
     }
 
     @Override public Facet facet() {
-        return new InternalDistinctDateHistogramFacet(facetName, comparatorType, histoProc.entries, true);
+        return new LongInternalDistinctDateHistogramFacet(facetName, comparatorType, histoProc.entries, true);
     }
 
     /**

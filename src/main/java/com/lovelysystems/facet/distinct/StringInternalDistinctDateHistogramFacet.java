@@ -2,7 +2,6 @@ package com.lovelysystems.facet.distinct;
 
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
-import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.search.facet.Facet;
 import org.elasticsearch.search.facet.InternalFacet;
 
@@ -11,15 +10,20 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
-public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDateHistogramFacet {
-    private static final String STREAM_TYPE = "LongDistinctDateHistogram";
+/**
+ */
+public class StringInternalDistinctDateHistogramFacet extends InternalDistinctDateHistogramFacet {
 
-    public LongInternalDistinctDateHistogramFacet() {
-        super();
-    }
+    private static final String STREAM_TYPE = "DistinctDateHistogram";
 
     public static void registerStreams() {
         InternalFacet.Streams.registerStream(STREAM, STREAM_TYPE);
+
+    }
+
+    @Override
+    protected InternalDistinctDateHistogramFacet newFacet() {
+        return new StringInternalDistinctDateHistogramFacet();
     }
 
     static InternalFacet.Stream STREAM = new InternalFacet.Stream() {
@@ -28,20 +32,20 @@ public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDate
         }
     };
 
-    public static LongInternalDistinctDateHistogramFacet readHistogramFacet(StreamInput in) throws IOException {
-        LongInternalDistinctDateHistogramFacet facet = new LongInternalDistinctDateHistogramFacet();
-        facet.readFrom(in);
-        return facet;
-    }
-
-
     @Override public String streamType() {
         return STREAM_TYPE;
     }
 
+    private StringInternalDistinctDateHistogramFacet() {
+        super();
+    }
 
-    public LongInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<DistinctEntry> entries, boolean cachedEntries) {
-        super(name, comparatorType, entries, cachedEntries);
+
+
+    public static StringInternalDistinctDateHistogramFacet readHistogramFacet(StreamInput in) throws IOException {
+        StringInternalDistinctDateHistogramFacet facet = new StringInternalDistinctDateHistogramFacet();
+        facet.readFrom(in);
+        return facet;
     }
 
     /**
@@ -59,7 +63,7 @@ public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDate
             int nameSize = in.readVInt();
             Set<Object> names = new HashSet<Object>(nameSize);
             for (int j = 0; j < nameSize; j++) {
-                names.add(in.readLong());
+                names.add(in.readUTF());
             }
             entries.add(new DistinctEntry(time, names));
         }
@@ -75,16 +79,11 @@ public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDate
         for (DistinctEntry entry : entries) {
             out.writeLong(entry.getTime());
             out.writeVInt(entry.getValue().size());
+
             for (Object name : entry.getValue()) {
-                out.writeLong((Long) name);
+                out.writeUTF((String) name);
             }
         }
         releaseCache();
     }
-
-    @Override
-    protected InternalDistinctDateHistogramFacet newFacet() {
-        return new LongInternalDistinctDateHistogramFacet();
-    }
-
 }
