@@ -2,6 +2,7 @@ package com.lovelysystems.facet.distinct;
 
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
+import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.search.facet.Facet;
 import org.elasticsearch.search.facet.InternalFacet;
 
@@ -21,6 +22,10 @@ public class StringInternalDistinctDateHistogramFacet extends InternalDistinctDa
 
     }
 
+    public StringInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<DistinctEntry> entries, boolean cachedEntries) {
+        super(name, comparatorType, entries, cachedEntries);
+    }
+
     @Override
     protected InternalDistinctDateHistogramFacet newFacet() {
         return new StringInternalDistinctDateHistogramFacet();
@@ -36,7 +41,7 @@ public class StringInternalDistinctDateHistogramFacet extends InternalDistinctDa
         return STREAM_TYPE;
     }
 
-    private StringInternalDistinctDateHistogramFacet() {
+    public StringInternalDistinctDateHistogramFacet() {
         super();
     }
 

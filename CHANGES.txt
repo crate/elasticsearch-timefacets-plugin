@@ -2,6 +2,12 @@
 Changes for Lovelysystems Elasticsearch Plugins
 ===============================================
 
+2012/08/12 0.4.2
+================
+
+ - fix cast exception in distinct date histogram
+
+
 2012/08/12 0.4.1
 ================
 

@@ -80,7 +80,7 @@ public class StringDistinctDateHistogramFacetCollector extends AbstractFacetColl
     }
 
     @Override public Facet facet() {
-        return new LongInternalDistinctDateHistogramFacet(facetName, comparatorType, histoProc.entries, true);
+        return new StringInternalDistinctDateHistogramFacet(facetName, comparatorType, histoProc.entries, true);
     }
 
     /**
