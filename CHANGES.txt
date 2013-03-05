@@ -2,6 +2,9 @@
 Changes for Lovelysystems Elasticsearch Plugins
 ===============================================
 
+2013/03/05 0.5.0
+================
+
  - added Long type support to latest facet
 
 2012/08/12 0.4.2
