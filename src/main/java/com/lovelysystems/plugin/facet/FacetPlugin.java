@@ -4,8 +4,6 @@ import com.lovelysystems.facet.distinct.DistinctDateHistogramFacetProcessor;
 import com.lovelysystems.facet.distinct.InternalDistinctDateHistogramFacet;
 import com.lovelysystems.facet.latest.InternalLatestFacet;
 import com.lovelysystems.facet.latest.LatestFacetProcessor;
-import com.lovelysystems.facet.latest.LongInternalLatestFacet;
-import com.lovelysystems.facet.latest.LongLatestFacetProcessor;
 import com.lovelysystems.facet.uncached.datehistogram.DateHistogramFacetProcessor;
 import com.lovelysystems.facet.uncached.datehistogram.InternalFullDateHistogramFacet;
 import org.elasticsearch.common.inject.Module;
@@ -40,8 +38,6 @@ public class FacetPlugin extends AbstractPlugin {
             InternalDistinctDateHistogramFacet.registerStreams();
             ((FacetModule) module).addFacetProcessor(LatestFacetProcessor.class);
             InternalLatestFacet.registerStreams();
-            ((FacetModule) module).addFacetProcessor(LongLatestFacetProcessor.class);
-            LongInternalLatestFacet.registerStreams();
 
         }
     }

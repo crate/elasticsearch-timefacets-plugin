@@ -21,7 +21,7 @@ import org.elasticsearch.search.facet.AbstractFacetCollector;
 import org.elasticsearch.search.facet.Facet;
 import org.elasticsearch.search.internal.SearchContext;
 
-public class LatestFacetCollector extends AbstractFacetCollector {
+public class IntLatestFacetCollector extends AbstractFacetCollector {
 
     static ThreadLocal<ThreadLocals.CleanableValue<Deque<TObjectIntHashMap<String>>>> cache = new ThreadLocal<ThreadLocals.CleanableValue<Deque<TObjectIntHashMap<String>>>>() {
         @Override
@@ -51,9 +51,9 @@ public class LatestFacetCollector extends AbstractFacetCollector {
 
     private final Set<String> names = new HashSet<String>();
 
-    public LatestFacetCollector(String facetName, String keyField,
-            String valueField, String tsField, int size, int start,
-            SearchContext context) {
+    public IntLatestFacetCollector(String facetName, String keyField,
+                                   String valueField, String tsField, int size, int start,
+                                   SearchContext context) {
         super(facetName);
         this.fieldDataCache = context.fieldDataCache();
         this.size = size;
@@ -111,7 +111,7 @@ public class LatestFacetCollector extends AbstractFacetCollector {
 
     public static class Aggregator implements LongValueInDocProc {
 
-        final ExtTLongObjectHashMap<InternalLatestFacet.Entry> entries = CacheRecycler
+        final ExtTLongObjectHashMap<IntInternalLatestFacet.Entry> entries = CacheRecycler
                 .popLongObjectMap();
 
         IntFieldData valueFieldData;
@@ -119,12 +119,12 @@ public class LatestFacetCollector extends AbstractFacetCollector {
 
         @Override
         public void onValue(int docId, long key) {
-            InternalLatestFacet.Entry entry = entries.get(key);
+            IntInternalLatestFacet.Entry entry = entries.get(key);
             long ts = tsFieldData.longValue(docId);
             if (entry == null || entry.ts < ts) {
                 int value = valueFieldData.intValue(docId);
                 if (entry == null) {
-                    entry = new InternalLatestFacet.Entry(ts, value);
+                    entry = new IntInternalLatestFacet.Entry(ts, value);
                     entries.put(key, entry);
                 } else {
                     entry.ts = ts;
@@ -141,7 +141,7 @@ public class LatestFacetCollector extends AbstractFacetCollector {
 
     @Override
     public Facet facet() {
-        InternalLatestFacet f = new InternalLatestFacet(facetName, size, start,
+        IntInternalLatestFacet f = new IntInternalLatestFacet(facetName, size, start,
                 aggregator.entries.size());
         f.insert(aggregator.entries);
         return f;

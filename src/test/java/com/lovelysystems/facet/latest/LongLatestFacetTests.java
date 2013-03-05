@@ -92,7 +92,7 @@ public class LongLatestFacetTests extends AbstractNodes {
         flush();
         XContentBuilder facetQuery = XContentFactory
                 .contentBuilder(XContentType.JSON).startObject()
-                .startObject("facetname").startObject("long_latest")
+                .startObject("facetname").startObject("latest")
                 .field("size", 5).field("start", 2).field("key_field", "k")
                 .field("value_field", "v").field("ts_field", "t").endObject()
                 .endObject().endObject();
@@ -101,7 +101,7 @@ public class LongLatestFacetTests extends AbstractNodes {
                 .setFacets(facetQuery.copiedBytes()).execute().actionGet();
         LongInternalLatestFacet facet = (LongInternalLatestFacet) response.facets()
                 .facet("facetname");
-        String expected = "{\"facetname\":{\"_type\":\"long_latest\",\"total\":25,"
+        String expected = "{\"facetname\":{\"_type\":\"latest\",\"total\":25,"
                 + "\"entries\":[" + "{\"value\":310,\"key\":22,\"ts\":900022},"
                 + "{\"value\":300,\"key\":21,\"ts\":900021},"
                 + "{\"value\":290,\"key\":20,\"ts\":900020},"

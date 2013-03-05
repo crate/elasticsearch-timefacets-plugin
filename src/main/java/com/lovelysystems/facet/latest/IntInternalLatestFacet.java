@@ -1,8 +1,5 @@
 package com.lovelysystems.facet.latest;
 
-import java.io.IOException;
-import java.util.List;
-
 import org.apache.lucene.util.PriorityQueue;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
@@ -13,9 +10,12 @@ import org.elasticsearch.common.xcontent.XContentBuilderString;
 import org.elasticsearch.search.facet.Facet;
 import org.elasticsearch.search.facet.InternalFacet;
 
-public class LongInternalLatestFacet extends InternalLatestFacet {
+import java.io.IOException;
+import java.util.List;
 
-    private static final String STREAM_TYPE = "long_latest";
+public class IntInternalLatestFacet extends InternalLatestFacet {
+
+    private static final String STREAM_TYPE = "int_latest";
 
     @Override
     public String streamType() {
@@ -23,21 +23,21 @@ public class LongInternalLatestFacet extends InternalLatestFacet {
     }
 
     public static void registerStreams() {
-        InternalFacet.Streams.registerStream(STREAM, STREAM_TYPE);
+        Streams.registerStream(STREAM, STREAM_TYPE);
     }
 
-    static InternalFacet.Stream STREAM = new InternalFacet.Stream() {
+    static Stream STREAM = new Stream() {
         @Override
         public Facet readFacet(String type, StreamInput in) throws IOException {
             return readDistinctTermsFacet(in);
         }
     };
 
-    public LongInternalLatestFacet(String facetName, int size, int start, int total) {
+    public IntInternalLatestFacet(String facetName, int size, int start, int total) {
         super(facetName, size, start, total);
     }
 
-    public LongInternalLatestFacet() {
+    public IntInternalLatestFacet() {
         super();
     }
 
@@ -55,7 +55,7 @@ public class LongInternalLatestFacet extends InternalLatestFacet {
         }
     }
 
-    public void insert(TLongObjectMap<LongInternalLatestFacet.Entry> entries) {
+    public void insert(TLongObjectMap<IntInternalLatestFacet.Entry> entries) {
         if (queue == null) {
             this.queue = new EntryPriorityQueue(start + size);
         }
@@ -71,15 +71,15 @@ public class LongInternalLatestFacet extends InternalLatestFacet {
 
     public static class Entry {
         public long ts;
-        public long value;
+        public int value;
         public long key;
 
-        public Entry(long ts, long value) {
+        public Entry(long ts, int value) {
             this.ts = ts;
             this.value = value;
         }
 
-        public Entry(long ts, long value, long key) {
+        public Entry(long ts, int value, long key) {
             this.ts = ts;
             this.value = value;
             this.key = key;
@@ -92,7 +92,7 @@ public class LongInternalLatestFacet extends InternalLatestFacet {
             return facets.get(0);
         }
         for (Facet facet : facets) {
-            LongInternalLatestFacet f = (LongInternalLatestFacet) facet;
+            IntInternalLatestFacet f = (IntInternalLatestFacet) facet;
             if (this == facet) {
                 continue;
             }
@@ -134,9 +134,9 @@ public class LongInternalLatestFacet extends InternalLatestFacet {
         return builder;
     }
 
-    public static LongInternalLatestFacet readDistinctTermsFacet(StreamInput in)
+    public static IntInternalLatestFacet readDistinctTermsFacet(StreamInput in)
             throws IOException {
-        LongInternalLatestFacet facet = new LongInternalLatestFacet();
+        IntInternalLatestFacet facet = new IntInternalLatestFacet();
         facet.readFrom(in);
         return facet;
     }
@@ -150,7 +150,7 @@ public class LongInternalLatestFacet extends InternalLatestFacet {
         this.queue = new EntryPriorityQueue(start + size);
         int size = in.readVInt();
         for (int i = 0; i < size; i++) {
-            queue.insertWithOverflow(new Entry(in.readVLong(), in.readVLong(),
+            queue.insertWithOverflow(new Entry(in.readVLong(), in.readVInt(),
                     in.readVLong()));
         }
     }
@@ -165,7 +165,7 @@ public class LongInternalLatestFacet extends InternalLatestFacet {
         while (queue.size() > 0) {
             Entry e = queue.pop();
             out.writeVLong(e.ts);
-            out.writeVLong(e.value);
+            out.writeVInt(e.value);
             out.writeVLong(e.key);
         }
     }
