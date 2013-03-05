@@ -62,7 +62,7 @@ public class LatestFacetProcessor extends AbstractComponent implements
         FieldMapper fieldMapper = context.mapperService().smartNameFieldMapper(
                 keyField);
         if ((fieldMapper != null)
-                && (fieldMapper.fieldDataType() != IntLatestFacetCollector.keyDataType)) {
+                && (fieldMapper.fieldDataType() != LatestFacetCollector.keyDataType)) {
             throw new FacetPhaseExecutionException(facetName,
                     "key field must be of type long but is "
                             + fieldMapper.fieldDataType());
@@ -70,7 +70,7 @@ public class LatestFacetProcessor extends AbstractComponent implements
 
         fieldMapper = context.mapperService().smartNameFieldMapper(tsField);
         if ((fieldMapper != null)
-                && (fieldMapper.fieldDataType() != IntLatestFacetCollector.tsDataType)) {
+                && (fieldMapper.fieldDataType() != LatestFacetCollector.tsDataType)) {
             throw new FacetPhaseExecutionException(facetName,
                     "ts field must be of type long but is "
                             + fieldMapper.fieldDataType());

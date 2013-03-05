@@ -20,15 +20,7 @@ import org.elasticsearch.search.facet.AbstractFacetCollector;
 import org.elasticsearch.search.facet.Facet;
 import org.elasticsearch.search.internal.SearchContext;
 
-public class LongLatestFacetCollector extends AbstractFacetCollector {
-
-    static ThreadLocal<ThreadLocals.CleanableValue<Deque<TObjectIntHashMap<String>>>> cache = new ThreadLocal<ThreadLocals.CleanableValue<Deque<TObjectIntHashMap<String>>>>() {
-        @Override
-        protected ThreadLocals.CleanableValue<Deque<TObjectIntHashMap<String>>> initialValue() {
-            return new ThreadLocals.CleanableValue<Deque<TObjectIntHashMap<java.lang.String>>>(
-                    new ArrayDeque<TObjectIntHashMap<String>>());
-        }
-    };
+public class LongLatestFacetCollector extends LatestFacetCollector {
 
     private final FieldDataCache fieldDataCache;
 
@@ -36,19 +28,11 @@ public class LongLatestFacetCollector extends AbstractFacetCollector {
     private final String valueFieldName;
     private final String tsFieldName;
 
-    public static final FieldDataType keyDataType = FieldDataType.DefaultTypes.LONG;
     public static final FieldDataType valueDataType = FieldDataType.DefaultTypes.LONG;
-    public static final FieldDataType tsDataType = FieldDataType.DefaultTypes.LONG;
 
     private LongFieldData keyFieldData;
 
     private final Aggregator aggregator;
-
-    private final int limit = 10;
-    private int size = 10;
-    private int start = 0;
-
-    private final Set<String> names = new HashSet<String>();
 
     public LongLatestFacetCollector(String facetName, String keyField,
             String valueField, String tsField, int size, int start,
