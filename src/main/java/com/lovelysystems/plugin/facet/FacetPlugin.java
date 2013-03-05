@@ -38,7 +38,7 @@ public class FacetPlugin extends AbstractPlugin {
             InternalDistinctDateHistogramFacet.registerStreams();
             ((FacetModule) module).addFacetProcessor(LatestFacetProcessor.class);
             InternalLatestFacet.registerStreams();
-            
+
         }
     }
 }

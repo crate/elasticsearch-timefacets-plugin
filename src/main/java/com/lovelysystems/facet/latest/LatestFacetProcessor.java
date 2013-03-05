@@ -7,6 +7,7 @@ import org.elasticsearch.common.component.AbstractComponent;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.index.field.data.FieldDataType;
 import org.elasticsearch.index.mapper.FieldMapper;
 import org.elasticsearch.search.facet.Facet;
 import org.elasticsearch.search.facet.FacetCollector;
@@ -26,7 +27,7 @@ public class LatestFacetProcessor extends AbstractComponent implements
 
     @Override
     public String[] types() {
-        return new String[] { InternalLatestFacet.TYPE };
+        return new String[] { InternalLatestFacet.TYPE, LongInternalLatestFacet.TYPE };
     }
 
     @Override
@@ -67,14 +68,6 @@ public class LatestFacetProcessor extends AbstractComponent implements
                             + fieldMapper.fieldDataType());
         }
 
-        fieldMapper = context.mapperService().smartNameFieldMapper(valueField);
-        if ((fieldMapper != null)
-                && (fieldMapper.fieldDataType() != LatestFacetCollector.valueDataType)) {
-            throw new FacetPhaseExecutionException(facetName,
-                    "value field must be of type int but is "
-                            + fieldMapper.fieldDataType());
-        }
-
         fieldMapper = context.mapperService().smartNameFieldMapper(tsField);
         if ((fieldMapper != null)
                 && (fieldMapper.fieldDataType() != LatestFacetCollector.tsDataType)) {
@@ -83,8 +76,16 @@ public class LatestFacetProcessor extends AbstractComponent implements
                             + fieldMapper.fieldDataType());
         }
 
-        return new LatestFacetCollector(facetName, keyField, valueField,
-                tsField, size, start, context);
+        fieldMapper = context.mapperService().smartNameFieldMapper(valueField);
+        if (fieldMapper.fieldDataType() == FieldDataType.DefaultTypes.INT) {
+            return new IntLatestFacetCollector(facetName, keyField, valueField, tsField, size, start, context);
+        } else if (fieldMapper.fieldDataType() == FieldDataType.DefaultTypes.LONG) {
+            return new LongLatestFacetCollector(facetName, keyField, valueField, tsField, size, start, context);
+        } else {
+            throw new FacetPhaseExecutionException(facetName, "value field  is not of type int or long");
+        }
+
+
     }
 
     @Override
