@@ -1,6 +1,6 @@
 package com.lovelysystems.plugin.facet;
 
-import com.lovelysystems.facet.distinct.DistinctDateHistogramFacetProcessor;
+import com.lovelysystems.facet.distinct.DistinctDateHistogramFacetParser;
 import com.lovelysystems.facet.distinct.InternalDistinctDateHistogramFacet;
 import com.lovelysystems.facet.latest.InternalLatestFacet;
 import com.lovelysystems.facet.latest.LatestFacetProcessor;
@@ -34,7 +34,7 @@ public class FacetPlugin extends AbstractPlugin {
         if (module instanceof FacetModule) {
             ((FacetModule) module).addFacetProcessor(DateHistogramFacetProcessor.class);
             InternalFullDateHistogramFacet.registerStreams();
-            ((FacetModule) module).addFacetProcessor(DistinctDateHistogramFacetProcessor.class);
+            ((FacetModule) module).addFacetProcessor(DistinctDateHistogramFacetParser.class);
             InternalDistinctDateHistogramFacet.registerStreams();
             ((FacetModule) module).addFacetProcessor(LatestFacetProcessor.class);
             InternalLatestFacet.registerStreams();

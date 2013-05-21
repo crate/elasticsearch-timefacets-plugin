@@ -13,12 +13,11 @@ import org.elasticsearch.common.trove.impl.Constants;
 import org.elasticsearch.common.trove.map.hash.TObjectIntHashMap;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.index.field.data.FieldDataType;
 import org.elasticsearch.index.mapper.FieldMapper;
 import org.elasticsearch.search.facet.Facet;
-import org.elasticsearch.search.facet.FacetCollector;
+import org.elasticsearch.search.facet.FacetExecutor;
+import org.elasticsearch.search.facet.FacetParser;
 import org.elasticsearch.search.facet.FacetPhaseExecutionException;
-import org.elasticsearch.search.facet.FacetProcessor;
 import org.elasticsearch.search.facet.datehistogram.DateHistogramFacet;
 import org.elasticsearch.search.internal.SearchContext;
 
@@ -28,13 +27,13 @@ import java.util.List;
 /**
  * Provides a date histogram with the count of distinct values in the period.
  */
-public class DistinctDateHistogramFacetProcessor extends AbstractComponent implements FacetProcessor {
+public class DistinctDateHistogramFacetParser extends AbstractComponent implements FacetParser {
 
     private final ImmutableMap<String, DateFieldParser> dateFieldParsers;
     private final TObjectIntHashMap<String> rounding = new TObjectIntHashMap<String>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
 
     @Inject
-    public DistinctDateHistogramFacetProcessor(Settings settings) {
+    public DistinctDateHistogramFacetParser(Settings settings) {
         super(settings);
         InternalDistinctDateHistogramFacet.registerStreams();
 
@@ -72,7 +71,17 @@ public class DistinctDateHistogramFacetProcessor extends AbstractComponent imple
     }
 
     @Override
-    public FacetCollector parse(String facetName, XContentParser parser, SearchContext context) throws IOException {
+    public FacetExecutor.Mode defaultMainMode() {
+        return FacetExecutor.Mode.COLLECTOR;
+    }
+
+    @Override
+    public FacetExecutor.Mode defaultGlobalMode() {
+        return FacetExecutor.Mode.COLLECTOR;
+    }
+
+    @Override
+    public FacetExecutor parse(String facetName, XContentParser parser, SearchContext context) throws IOException {
         String keyField = null;
         String distinctField = null;
         boolean intervalSet = false;
@@ -127,7 +136,7 @@ public class DistinctDateHistogramFacetProcessor extends AbstractComponent imple
             throw new FacetPhaseExecutionException(facetName, "key field is required to be set for distinct histogram facet, either using [field] or using [key_field]");
         }
         FieldMapper mapper = context.mapperService().smartNameFieldMapper(keyField);
-        if (mapper.fieldDataType() != FieldDataType.DefaultTypes.LONG) {
+        if (!mapper.fieldDataType().getType().equals("long")) {
             throw new FacetPhaseExecutionException(facetName, "(key) field [" + keyField + "] is not of type date");
         }
 
@@ -175,11 +184,15 @@ public class DistinctDateHistogramFacetProcessor extends AbstractComponent imple
         }
 
 
-        if (mapper.fieldDataType() == FieldDataType.DefaultTypes.STRING) {
-            return new StringDistinctDateHistogramFacetCollector(facetName, keyField, distinctField, dateTime, interval, comparatorType, context);
+        if (mapper.fieldDataType().getType().equals("string")) {
+            return null;
+            // TODO
+            // return new StringDistinctDateHistogramFacetCollector(facetName, keyField, distinctField, dateTime, interval, comparatorType, context);
 
-        } else if (mapper.fieldDataType() == FieldDataType.DefaultTypes.LONG) {
-            return new LongDistinctDateHistogramFacetCollector(facetName, keyField, distinctField, dateTime, interval, comparatorType, context);
+        } else if (mapper.fieldDataType().getType().equals("long")) {
+            return null;
+            // TODO
+            // return new LongDistinctDateHistogramFacetCollector(facetName, keyField, distinctField, dateTime, interval, comparatorType, context);
 
         } else {
             throw new FacetPhaseExecutionException(facetName, "distinct field [" + distinctField + "] is not of type string or long");
@@ -188,7 +201,8 @@ public class DistinctDateHistogramFacetProcessor extends AbstractComponent imple
 
     }
 
-    @Override
+    // TODO:
+    //@Override
     public Facet reduce(String name, List<Facet> facets) {
         InternalDistinctDateHistogramFacet first = (InternalDistinctDateHistogramFacet) facets.get(0);
         return first.reduce(name, facets);
