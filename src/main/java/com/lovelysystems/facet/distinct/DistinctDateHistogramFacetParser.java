@@ -192,7 +192,7 @@ public class DistinctDateHistogramFacetParser extends AbstractComponent implemen
         } else if (mapper.fieldDataType().getType().equals("long")) {
             return null;
             // TODO
-            // return new LongDistinctDateHistogramFacetCollector(facetName, keyField, distinctField, dateTime, interval, comparatorType, context);
+            return new LongDistinctDateHistogramFacetExecutor(facetName, keyField, distinctField, dateTime, interval, comparatorType, context);
 
         } else {
             throw new FacetPhaseExecutionException(facetName, "distinct field [" + distinctField + "] is not of type string or long");

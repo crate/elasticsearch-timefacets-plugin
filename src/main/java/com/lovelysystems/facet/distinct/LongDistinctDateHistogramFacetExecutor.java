@@ -1,17 +1,17 @@
 package com.lovelysystems.facet.distinct;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.elasticsearch.common.CacheRecycler;
 import org.elasticsearch.common.joda.time.MutableDateTime;
 import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
-import org.elasticsearch.index.cache.field.data.FieldDataCache;
-import org.elasticsearch.index.field.data.FieldDataType;
-import org.elasticsearch.index.field.data.longs.LongFieldData;
+import org.elasticsearch.index.fielddata.LongValues;
 import org.elasticsearch.index.mapper.FieldMapper;
 import org.elasticsearch.index.mapper.MapperService;
-import org.elasticsearch.search.facet.AbstractFacetCollector;
-import org.elasticsearch.search.facet.Facet;
+import org.elasticsearch.search.facet.FacetExecutor;
 import org.elasticsearch.search.facet.FacetPhaseExecutionException;
+import org.elasticsearch.search.facet.InternalFacet;
+import org.elasticsearch.search.facet.LongFacetAggregatorBase;
 import org.elasticsearch.search.facet.datehistogram.DateHistogramFacet;
 import org.elasticsearch.search.internal.SearchContext;
 
@@ -22,7 +22,7 @@ import java.io.IOException;
  *
  * Field cache is used for the key and the value field.
  */
-public class LongDistinctDateHistogramFacetCollector extends AbstractFacetCollector {
+public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
 
     private final String keyIndexFieldName;
     private final String valueIndexFieldName;
@@ -31,19 +31,19 @@ public class LongDistinctDateHistogramFacetCollector extends AbstractFacetCollec
 
     private final DateHistogramFacet.ComparatorType comparatorType;
 
-    private final FieldDataCache fieldDataCache;
+    //private final FieldDataCache fieldDataCache;
 
-    private final FieldDataType keyFieldDataType;
-    private LongFieldData keyFieldData;
-    private final FieldDataType valueFieldDataType;
+    //private final FieldDataType keyFieldDataType;
+    //private LongFieldData keyFieldData;
+    //private final FieldDataType valueFieldDataType;
 
     private final DateHistogramProc histoProc;
 
-    public LongDistinctDateHistogramFacetCollector(String facetName, String keyFieldName, String distinctFieldName, MutableDateTime dateTime, long interval, DateHistogramFacet.ComparatorType comparatorType, SearchContext context) {
-        super(facetName);
+    public LongDistinctDateHistogramFacetExecutor(String facetName, String keyFieldName, String distinctFieldName,
+                                                  MutableDateTime dateTime, long interval, DateHistogramFacet.ComparatorType comparatorType, SearchContext context) {
         this.dateTime = dateTime;
         this.comparatorType = comparatorType;
-        this.fieldDataCache = context.fieldDataCache();
+        //this.fieldDataCache = context.fieldDataCache();
 
         MapperService.SmartNameFieldMappers smartMappers = context.mapperService().smartName(keyFieldName);
         if (smartMappers == null || !smartMappers.hasMapper()) {
@@ -52,11 +52,11 @@ public class LongDistinctDateHistogramFacetCollector extends AbstractFacetCollec
 
         // add type filter if there is exact doc mapper associated with it
         if (smartMappers.hasDocMapper()) {
-            setFilter(context.filterCache().cache(smartMappers.docMapper().typeFilter()));
+            //setFilter(context.filterCache().cache(smartMappers.docMapper().typeFilter()));
         }
 
         keyIndexFieldName = smartMappers.mapper().names().indexName();
-        keyFieldDataType = smartMappers.mapper().fieldDataType();
+        //keyFieldDataType = smartMappers.mapper().fieldDataType();
 
 
         FieldMapper mapper = context.smartNameFieldMapper(distinctFieldName);
@@ -64,33 +64,62 @@ public class LongDistinctDateHistogramFacetCollector extends AbstractFacetCollec
             throw new FacetPhaseExecutionException(facetName, "No mapping found for value_field [" + distinctFieldName + "]");
         }
         valueIndexFieldName = mapper.names().indexName();
-        valueFieldDataType = mapper.fieldDataType();
+        //valueFieldDataType = mapper.fieldDataType();
 
         this.histoProc = new DateHistogramProc(interval);
     }
 
-    @Override protected void doSetNextReader(IndexReader reader, int docBase) throws IOException {
-        keyFieldData = (LongFieldData) fieldDataCache.cache(keyFieldDataType, reader, keyIndexFieldName);
-        histoProc.valueFieldData = (LongFieldData) fieldDataCache.cache(valueFieldDataType, reader, valueIndexFieldName);
+    @Override
+    public Collector collector() {
+        return new Collector();
     }
 
-    @Override protected void doCollect(int doc) throws IOException {
-        keyFieldData.forEachValueInDoc(doc, dateTime, histoProc);
-    }
-
-    @Override public Facet facet() {
+    @Override
+    public InternalFacet buildFacet(String facetName) {
         return new LongInternalDistinctDateHistogramFacet(facetName, comparatorType, histoProc.entries, true);
     }
+
+    class Collector extends FacetExecutor.Collector {
+
+        private LongValues values;
+        //private final DateHistogramProc histoProc;
+
+        public Collector() {
+            //this.histoProc = new DateHistogramProc(counts, tzRounding);
+        }
+
+        @Override
+        public void setNextReader(AtomicReaderContext context) throws IOException {
+            //values = indexFieldData.load(context).getLongValues();
+        }
+
+        //@Override
+        //protected void doSetNextReader(IndexReader reader, int docBase) throws IOException {
+        //    keyFieldData = (LongFieldData) fieldDataCache.cache(keyFieldDataType, reader, keyIndexFieldName);
+        //    histoProc.valueFieldData = (LongFieldData) fieldDataCache.cache(valueFieldDataType, reader, valueIndexFieldName);
+        //}
+
+
+        @Override
+        public void collect(int doc) throws IOException {
+            //histoProc.onDoc(doc, values);
+        }
+
+        @Override
+        public void postCollection() {
+        }
+    }
+
 
     /**
      * Collect the time intervals in value aggregators for each time interval found.
      * The value aggregator finally contains the facet entry.
      */
-    public static class DateHistogramProc implements LongFieldData.DateValueInDocProc {
+    public static class DateHistogramProc extends  LongFacetAggregatorBase {
 
         final ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> entries = CacheRecycler.popLongObjectMap();
 
-        LongFieldData valueFieldData;
+        //LongFieldData valueFieldData;
 
         private final long interval;
 
@@ -103,7 +132,8 @@ public class LongDistinctDateHistogramFacetCollector extends AbstractFacetCollec
         /*
          * for each time interval an entry is created in which the distinct values are aggregated
          */
-        @Override public void onValue(int docId, MutableDateTime dateTime) {
+        @Override
+        public void onValue(int docId, MutableDateTime dateTime) {
             long time = dateTime.getMillis();
             if (interval != 1) {
                 time = ((time / interval) * interval);
@@ -115,7 +145,7 @@ public class LongDistinctDateHistogramFacetCollector extends AbstractFacetCollec
                 entries.put(time, entry);
             }
             valueAggregator.entry = entry;
-            valueFieldData.forEachValueInDoc(docId, valueAggregator);
+            //valueFieldData.forEachValueInDoc(docId, valueAggregator);
         }
 
         /*
@@ -125,7 +155,8 @@ public class LongDistinctDateHistogramFacetCollector extends AbstractFacetCollec
 
             InternalDistinctDateHistogramFacet.DistinctEntry entry;
 
-            @Override public void onValue(int docId, long value) {
+            @Override
+            public void onValue(int docId, long value) {
                 entry.getValue().add(value);
             }
 
