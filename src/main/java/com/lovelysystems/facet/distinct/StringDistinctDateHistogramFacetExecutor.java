@@ -4,14 +4,10 @@ import org.apache.lucene.index.IndexReader;
 import org.elasticsearch.common.CacheRecycler;
 import org.elasticsearch.common.joda.time.MutableDateTime;
 import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
-import org.elasticsearch.index.cache.field.data.FieldDataCache;
-import org.elasticsearch.index.field.data.FieldDataType;
-import org.elasticsearch.index.field.data.longs.LongFieldData;
-import org.elasticsearch.index.field.data.strings.StringFieldData;
 import org.elasticsearch.index.mapper.FieldMapper;
 import org.elasticsearch.index.mapper.MapperService;
-import org.elasticsearch.search.facet.AbstractFacetCollector;
 import org.elasticsearch.search.facet.Facet;
+import org.elasticsearch.search.facet.FacetExecutor;
 import org.elasticsearch.search.facet.FacetPhaseExecutionException;
 import org.elasticsearch.search.facet.datehistogram.DateHistogramFacet;
 import org.elasticsearch.search.internal.SearchContext;
@@ -23,7 +19,7 @@ import java.io.IOException;
  *
  * Field cache is used for the key and the value field.
  */
-public class StringDistinctDateHistogramFacetCollector extends AbstractFacetCollector {
+public class StringDistinctDateHistogramFacetExecutor extends FacetExecutor {
 
     private final String keyIndexFieldName;
     private final String valueIndexFieldName;
@@ -40,7 +36,7 @@ public class StringDistinctDateHistogramFacetCollector extends AbstractFacetColl
 
     private final DateHistogramProc histoProc;
 
-    public StringDistinctDateHistogramFacetCollector(String facetName, String keyFieldName, String distinctFieldName, MutableDateTime dateTime, long interval, DateHistogramFacet.ComparatorType comparatorType, SearchContext context) {
+    public StringDistinctDateHistogramFacetExecutor(String facetName, String keyFieldName, String distinctFieldName, MutableDateTime dateTime, long interval, DateHistogramFacet.ComparatorType comparatorType, SearchContext context) {
         super(facetName);
         this.dateTime = dateTime;
         this.comparatorType = comparatorType;
