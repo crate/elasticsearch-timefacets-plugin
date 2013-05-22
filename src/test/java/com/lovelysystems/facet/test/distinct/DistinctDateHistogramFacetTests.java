@@ -109,7 +109,7 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
 
         SearchResponse response = client.prepareSearch()
                 .setSearchType(SearchType.COUNT)
-                .setFacets(facetQuery.copiedBytes())
+                .setFacets(facetQuery.bytes().array())
                 .execute().actionGet();
     }
 
@@ -137,7 +137,7 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
 
         SearchResponse response = client.prepareSearch()
                 .setSearchType(SearchType.COUNT)
-                .setFacets(facetQuery.copiedBytes())
+                .setFacets(facetQuery.bytes().array())
                 .execute().actionGet();
     }
 
@@ -164,9 +164,9 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
                 .endObject();
         SearchResponse response = client.prepareSearch()
                 .setSearchType(SearchType.COUNT)
-                .setFacets(facetQuery.copiedBytes())
+                .setFacets(facetQuery.bytes().array())
                 .execute().actionGet();
-        InternalDistinctDateHistogramFacet facet = (InternalDistinctDateHistogramFacet) response.facets().facet("distinct");
+        InternalDistinctDateHistogramFacet facet = (InternalDistinctDateHistogramFacet) response.getFacets().facet("distinct");
         XContentBuilder builder = XContentFactory.contentBuilder(XContentType.JSON).startObject();
         facet.toXContent(builder, ToXContent.EMPTY_PARAMS).endObject();
         assertThat(builder.string(), equalTo(
@@ -189,9 +189,9 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
         flush();
         response = client.prepareSearch()
                 .setSearchType(SearchType.COUNT)
-                .setFacets(facetQuery.copiedBytes())
+                .setFacets(facetQuery.bytes().array())
                 .execute().actionGet();
-        facet = (InternalDistinctDateHistogramFacet) response.facets().facet("distinct");
+        facet = (InternalDistinctDateHistogramFacet) response.getFacets().facet("distinct");
         builder = XContentFactory.contentBuilder(XContentType.JSON).startObject();
         facet.toXContent(builder, ToXContent.EMPTY_PARAMS).endObject();
         assertThat(builder.string(), equalTo(
@@ -228,9 +228,9 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
         flush();
         response = client.prepareSearch()
                 .setSearchType(SearchType.COUNT)
-                .setFacets(facetQuery.copiedBytes())
+                .setFacets(facetQuery.bytes().array())
                 .execute().actionGet();
-        facet = (InternalDistinctDateHistogramFacet) response.facets().facet("distinct");
+        facet = (InternalDistinctDateHistogramFacet) response.getFacets().facet("distinct");
         builder = XContentFactory.contentBuilder(XContentType.JSON).startObject();
         facet.toXContent(builder, ToXContent.EMPTY_PARAMS).endObject();
         assertThat(builder.string(), equalTo(
@@ -266,9 +266,9 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
                 .endObject();
         SearchResponse response = client.prepareSearch()
                 .setSearchType(SearchType.COUNT)
-                .setFacets(facetQuery.copiedBytes())
+                .setFacets(facetQuery.bytes().array())
                 .execute().actionGet();
-        InternalDistinctDateHistogramFacet facet = (InternalDistinctDateHistogramFacet) response.facets().facet("distinct");
+        InternalDistinctDateHistogramFacet facet = (InternalDistinctDateHistogramFacet) response.getFacets().facet("distinct");
         XContentBuilder builder = XContentFactory.contentBuilder(XContentType.JSON).startObject();
         facet.toXContent(builder, ToXContent.EMPTY_PARAMS).endObject();
         assertThat(builder.string(), equalTo(
@@ -290,9 +290,9 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
         flush();
         response = client.prepareSearch()
                 .setSearchType(SearchType.COUNT)
-                .setFacets(facetQuery.copiedBytes())
+                .setFacets(facetQuery.bytes().array())
                 .execute().actionGet();
-        facet = (InternalDistinctDateHistogramFacet) response.facets().facet("distinct");
+        facet = (InternalDistinctDateHistogramFacet) response.getFacets().facet("distinct");
         builder = XContentFactory.contentBuilder(XContentType.JSON).startObject();
         facet.toXContent(builder, ToXContent.EMPTY_PARAMS).endObject();
         assertThat(builder.string(), equalTo(
@@ -327,9 +327,9 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
         flush();
         response = client.prepareSearch()
                 .setSearchType(SearchType.COUNT)
-                .setFacets(facetQuery.copiedBytes())
+                .setFacets(facetQuery.bytes().array())
                 .execute().actionGet();
-        facet = (InternalDistinctDateHistogramFacet) response.facets().facet("distinct");
+        facet = (InternalDistinctDateHistogramFacet) response.getFacets().facet("distinct");
         builder = XContentFactory.contentBuilder(XContentType.JSON).startObject();
         facet.toXContent(builder, ToXContent.EMPTY_PARAMS).endObject();
         assertThat(builder.string(), equalTo(
