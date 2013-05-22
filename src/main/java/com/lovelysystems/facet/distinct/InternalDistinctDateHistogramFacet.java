@@ -32,7 +32,9 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
         StringInternalDistinctDateHistogramFacet.registerStreams();
     }
 
-    public InternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> entries, boolean cachedEntries) {
+    public InternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType,
+                                              ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> entries,
+                                              boolean cachedEntries) {
         this.name = name;
         this.comparatorType = comparatorType;
         this.tEntries = entries;
@@ -59,100 +61,51 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
             this.values = new HashSet<Object>();
         }
 
-        @Override public long time() {
+        public long getTime() {
             return time;
         }
 
-        @Override public long getTime() {
-            return time();
-        }
-
-        public Set<Object> value() {
+        public Set<Object> getValues() {
             return this.values;
         }
 
-        public Set<Object> getValue() {
-            return value();
+        public long getCount() {
+            return this.values.size();
         }
 
-        @Override public long count() {
-            return value().size();
-        }
-
-        @Override public long getCount() {
-            return count();
-        }
-
-        @Override public long totalCount() {
+        public long getTotalCount() {
             return 0;
         }
 
-        @Override public long getTotalCount() {
-            return 0;
-        }
-
-        @Override public double total() {
+        public double getTotal() {
             return Double.NaN;
         }
 
-        @Override public double getTotal() {
-            return total();
-        }
-
-        @Override public double mean() {
+        public double getMean() {
             return Double.NaN;
         }
 
-        @Override public double getMean() {
-            return mean();
-        }
-
-        @Override public double min() {
+        public double getMin() {
             return Double.NaN;
         }
 
-        @Override public double getMin() {
-            return Double.NaN;
-        }
-
-        @Override public double max() {
-            return Double.NaN;
-        }
-
-        @Override public double getMax() {
+        public double getMax() {
             return Double.NaN;
         }
     }
 
-
-    @Override public String name() {
-        return this.name;
-    }
-
-    @Override public String getName() {
-        return name();
-    }
-
-    @Override public String type() {
-        return TYPE;
-    }
-
-    @Override public String getType() {
-        return type();
-    }
-
-    @Override public List<DistinctEntry> entries() {
+    public List<DistinctEntry> entries() {
         if (!(entries instanceof List)) {
             entries = new ArrayList<DistinctEntry>(entries);
         }
         return (List<DistinctEntry>) entries;
     }
 
-    @Override public List<DistinctEntry> getEntries() {
+    public List<DistinctEntry> getEntries() {
         return entries();
     }
 
-    @Override public Iterator<Entry> iterator() {
+    public Iterator<Entry> iterator() {
         return (Iterator) entries().iterator();
     }
 
@@ -173,7 +126,7 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
         static final XContentBuilderString TOTAL_COUNT = new XContentBuilderString("count");
     }
 
-    @Override public Facet reduce(String name, List<Facet> facets) {
+    public Facet reduce(String name, List<Facet> facets) {
         if (facets.size() == 1) {
             // we need to sort it
             InternalDistinctDateHistogramFacet internalFacet = (InternalDistinctDateHistogramFacet) facets.get(0);
@@ -189,7 +142,7 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
             for (DistinctEntry fullEntry : histoFacet.entries) {
                 DistinctEntry current = map.get(fullEntry.getTime());
                 if (current != null) {
-                    current.getValue().addAll(fullEntry.getValue());
+                    current.getValues().addAll(fullEntry.getValues());
 
                 } else {
                     map.put(fullEntry.getTime(), fullEntry);
@@ -227,7 +180,8 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
      *
      * For each time entry we provide the number of distinct values in the time range.
      */
-    @Override public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
         Set<Object> all = null;
         if (entries().size() != 1) {
             all = new HashSet<Object>();
@@ -237,13 +191,13 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
         builder.startArray(Fields.ENTRIES);
         for (DistinctEntry entry : entries) {
             builder.startObject();
-            builder.field(Fields.TIME, entry.time());
-            builder.field(Fields.COUNT, entry.count());
+            builder.field(Fields.TIME, entry.getTime());
+            builder.field(Fields.COUNT, entry.getCount());
             builder.endObject();
             if (entries().size() == 1) {
-                all = entry.value();
+                all = entry.getValues();
             } else {
-                all.addAll(entry.value());
+                all.addAll(entry.getValues());
             }
         }
         builder.endArray();
@@ -251,6 +205,4 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
         builder.endObject();
         return builder;
     }
-
-
 }
