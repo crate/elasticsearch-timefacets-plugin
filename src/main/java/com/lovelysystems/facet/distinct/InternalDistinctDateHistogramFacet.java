@@ -15,9 +15,6 @@ import java.util.*;
 public abstract class InternalDistinctDateHistogramFacet extends InternalDateHistogramFacet {
 
     public static final String TYPE = "distinct_date_histogram";
-
-    protected String name;
-
     protected ComparatorType comparatorType;
 
     ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> tEntries;
@@ -179,7 +176,7 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
         if (entries().size() != 1) {
             all = new HashSet<Object>();
         }
-        builder.startObject(name);
+        builder.startObject(getName());
         builder.field(Fields._TYPE, TYPE);
         builder.startArray(Fields.ENTRIES);
         for (DistinctEntry entry : entries) {
