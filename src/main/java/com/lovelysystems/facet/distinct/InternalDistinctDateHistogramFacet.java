@@ -27,19 +27,13 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
     public InternalDistinctDateHistogramFacet() {
     }
 
-    public static void registerStreams() {
-        LongInternalDistinctDateHistogramFacet.registerStreams();
-        StringInternalDistinctDateHistogramFacet.registerStreams();
+    public InternalDistinctDateHistogramFacet(String facetName) {
+        super(facetName);
     }
 
-    public InternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType,
-                                              ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> entries,
-                                              boolean cachedEntries) {
-        this.name = name;
-        this.comparatorType = comparatorType;
-        this.tEntries = entries;
-        this.cachedEntries = cachedEntries;
-        this.entries = entries.valueCollection();
+    public static void registerStreams() {
+        LongInternalDistinctDateHistogramFacet.registerStreams();
+        //StringInternalDistinctDateHistogramFacet.registerStreams();
     }
 
     /**
@@ -126,7 +120,7 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
         static final XContentBuilderString TOTAL_COUNT = new XContentBuilderString("count");
     }
 
-    public Facet reduce(String name, List<Facet> facets) {
+    public Facet reduce(List<Facet> facets) {
         if (facets.size() == 1) {
             // we need to sort it
             InternalDistinctDateHistogramFacet internalFacet = (InternalDistinctDateHistogramFacet) facets.get(0);
@@ -167,7 +161,6 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
 
         // just initialize it as already ordered facet
         InternalDistinctDateHistogramFacet ret = newFacet();
-        ret.name = name;
         ret.comparatorType = comparatorType;
         ret.entries = ordered;
         return ret;

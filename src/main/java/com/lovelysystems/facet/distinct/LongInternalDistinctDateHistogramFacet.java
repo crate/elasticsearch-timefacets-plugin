@@ -1,29 +1,42 @@
 package com.lovelysystems.facet.distinct;
 
+import org.elasticsearch.common.CacheRecycler;
+import org.elasticsearch.common.bytes.BytesReference;
+import org.elasticsearch.common.bytes.HashedBytesArray;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.search.facet.Facet;
-import org.elasticsearch.search.facet.InternalFacet;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDateHistogramFacet {
-    private static final String STREAM_TYPE = "LongDistinctDateHistogram";
 
-    public LongInternalDistinctDateHistogramFacet() {
-        super();
-    }
+    private static final BytesReference STREAM_TYPE = new HashedBytesArray("LongDistinctDateHistogram");
 
     public static void registerStreams() {
-        InternalFacet.Streams.registerStream(STREAM, STREAM_TYPE);
+        Streams.registerStream(STREAM, STREAM_TYPE);
     }
 
-    static InternalFacet.Stream STREAM = new InternalFacet.Stream() {
-        @Override public Facet readFacet(String type, StreamInput in) throws IOException {
+    LongInternalDistinctDateHistogramFacet() {
+    }
+
+    LongInternalDistinctDateHistogramFacet(String name) {
+        super(name);
+    }
+
+    public LongInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<DistinctEntry> entries, boolean cachedEntries) {
+        super(name);
+        this.comparatorType = comparatorType;
+        this.tEntries = entries;
+        this.cachedEntries = cachedEntries;
+        this.entries = entries.valueCollection();
+    }
+
+    static Stream STREAM = new Stream() {
+        @Override
+        public Facet readFacet(StreamInput in) throws IOException {
             return readHistogramFacet(in);
         }
     };
@@ -34,21 +47,22 @@ public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDate
         return facet;
     }
 
-
-    @Override public String streamType() {
+    @Override
+    public BytesReference streamType() {
         return STREAM_TYPE;
     }
 
-
-    public LongInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<DistinctEntry> entries, boolean cachedEntries) {
-        super(name, comparatorType, entries, cachedEntries);
+    @Override
+    protected  LongInternalDistinctDateHistogramFacet newFacet() {
+        return new LongInternalDistinctDateHistogramFacet(getName());
     }
 
     /**
      * The reader for the internal transport protocol.
      */
-    @Override public void readFrom(StreamInput in) throws IOException {
-        name = in.readUTF();
+    @Override
+    public void readFrom(StreamInput in) throws IOException {
+        super.readFrom(in);
         comparatorType = ComparatorType.fromId(in.readByte());
 
         cachedEntries = false;
@@ -65,26 +79,22 @@ public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDate
         }
     }
 
+
     /**
      * The writer for the internal transport protocol.
      */
-    @Override public void writeTo(StreamOutput out) throws IOException {
-        out.writeUTF(name);
+    @Override
+    public void writeTo(StreamOutput out) throws IOException {
+        super.writeTo(out);
         out.writeByte(comparatorType.id());
         out.writeVInt(entries.size());
         for (DistinctEntry entry : entries) {
             out.writeLong(entry.getTime());
-            out.writeVInt(entry.getValue().size());
-            for (Object name : entry.getValue()) {
+            out.writeVInt(entry.getValues().size());
+            for (Object name : entry.getValues()) {
                 out.writeLong((Long) name);
             }
         }
         releaseCache();
     }
-
-    @Override
-    protected InternalDistinctDateHistogramFacet newFacet() {
-        return new LongInternalDistinctDateHistogramFacet();
-    }
-
 }
