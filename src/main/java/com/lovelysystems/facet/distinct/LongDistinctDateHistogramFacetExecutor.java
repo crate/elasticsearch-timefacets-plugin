@@ -15,8 +15,6 @@ import java.io.IOException;
 
 /**
  * Collect the distinct values per time interval.
- *
- * Field cache is used for the key and the value field.
  */
 public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
 
@@ -50,6 +48,11 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
         return new LongInternalDistinctDateHistogramFacet(facetName, comparatorType, entries, true);
     }
 
+    /*
+     * Similar to the Collector from the ValueDateHistogramFacetExecutor
+     *
+     * Only difference is that dateTime and interval is passed to DateHistogramProc instead of tzRounding
+     */
     class Collector extends FacetExecutor.Collector {
 
         private LongValues keyValues;
@@ -65,13 +68,6 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
             histoProc.valueValues = distinctIndexFieldData.load(context).getLongValues();
         }
 
-        //@Override
-        //protected void doSetNextReader(IndexReader reader, int docBase) throws IOException {
-        //    keyFieldData = (LongFieldData) fieldDataCache.cache(keyFieldDataType, reader, keyIndexFieldName);
-        //    histoProc.valueFieldData = (LongFieldData) fieldDataCache.cache(valueFieldDataType, reader, valueIndexFieldName);
-        //}
-
-
         @Override
         public void collect(int doc) throws IOException {
             histoProc.onDoc(doc, keyValues);
@@ -86,6 +82,8 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
     /**
      * Collect the time intervals in value aggregators for each time interval found.
      * The value aggregator finally contains the facet entry.
+     *
+     *
      */
     public static class DateHistogramProc extends LongFacetAggregatorBase {
 
@@ -104,6 +102,10 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
             this.interval = interval;
         }
 
+        /*
+         * Extend the onDoc implementation of LongFacetAggregatorBase to pass a dateTime to onValue
+         * to account for the interval and rounding that is set in the Parser
+         */
         @Override
         public void onDoc(int docId, LongValues values) {
             if (values.hasValue(docId)) {

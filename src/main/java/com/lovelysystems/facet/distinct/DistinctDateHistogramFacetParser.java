@@ -28,7 +28,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Provides a date histogram with the count of distinct values in the period.
+ * Parser is responsible to make sense of a SearchRequests "facet query" and
+ * has to choose the correct FacetExecutor based on the facet query
+ *
+ * The {@link #parse} method does all the interesting work.
  */
 public class DistinctDateHistogramFacetParser extends AbstractComponent implements FacetParser {
 
@@ -100,6 +103,8 @@ public class DistinctDateHistogramFacetParser extends AbstractComponent implemen
         String distinctField = null;
         MutableDateTime dateTime = new MutableDateTime(DateTimeZone.UTC);
 
+        // get the interesting fields from the "facet-query"
+        // basically it's the same code as in the regular DateHisogramFacetParser
         while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
             if (token == XContentParser.Token.FIELD_NAME) {
                 fieldName = parser.currentName();
@@ -141,7 +146,7 @@ public class DistinctDateHistogramFacetParser extends AbstractComponent implemen
             }
         }
 
-
+        // validation; opposed to the DateHistogramFacetParser the distinctField and interval is also required
         if (keyField == null) {
             throw new FacetPhaseExecutionException(facetName, "key field is required to be set for distinct histogram facet, either using [field] or using [key_field]");
         }
@@ -151,7 +156,6 @@ public class DistinctDateHistogramFacetParser extends AbstractComponent implemen
         } else if (!keyMapper.fieldDataType().getType().equals("long")) {
             throw new FacetPhaseExecutionException(facetName, "(key) field [" + keyField + "] is not of type date");
         }
-
         if (distinctField == null) {
             throw new FacetPhaseExecutionException(facetName, "distinct field is required to be set for distinct histogram facet, either using [value_field] or using [distinctField]");
         }
@@ -159,11 +163,12 @@ public class DistinctDateHistogramFacetParser extends AbstractComponent implemen
         if (distinctFieldMapper == null) {
             throw new FacetPhaseExecutionException(facetName, "no mapping found for " + distinctField);
         }
-
         if (!intervalSet) {
             throw new FacetPhaseExecutionException(facetName, "[interval] is required to be set for distinct histogram facet");
         }
 
+
+        // this is specific to the "Distinct" DateHistogram. Use a MutableDateTime to take care of the interval and rounding.
         // we set the rounding after we set the zone, for it to take affect
         if (sInterval != null) {
             int index = sInterval.indexOf(':');
@@ -209,6 +214,8 @@ public class DistinctDateHistogramFacetParser extends AbstractComponent implemen
     }
 
     static interface DateFieldParser {
+
+        // Nothing special here; 1:1 the same as in the DateHistogramFacetParser
 
         DateTimeField parse(Chronology chronology);
 
