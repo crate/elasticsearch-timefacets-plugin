@@ -56,7 +56,7 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
         private final DateHistogramProc histoProc;
 
         public Collector() {
-            this.histoProc = new DateHistogramProc(entries, interval);
+            this.histoProc = new DateHistogramProc(entries, dateTime, interval);
         }
 
         @Override
@@ -89,15 +89,38 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
      */
     public static class DateHistogramProc extends LongFacetAggregatorBase {
 
+        private int total;
+        private int missing;
         LongValues valueValues;
         private final long interval;
+        private MutableDateTime dateTime;
         final ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> entries;
 
         final ValueAggregator valueAggregator = new ValueAggregator();
 
-        public DateHistogramProc(ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry>  entries, long interval) {
+        public DateHistogramProc(ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry>  entries, MutableDateTime dateTime, long interval) {
+            this.dateTime = dateTime;
             this.entries = entries;
             this.interval = interval;
+        }
+
+        @Override
+        public void onDoc(int docId, LongValues values) {
+            if (values.hasValue(docId)) {
+                final LongValues.Iter iter = values.getIter(docId);
+                while (iter.hasNext()) {
+                    dateTime.setMillis(iter.next());
+                    onValue(docId, dateTime);
+                    total++;
+                }
+            } else {
+                missing++;
+            }
+        }
+
+        protected void onValue(int docId, MutableDateTime dateTime) {
+            long time = dateTime.getMillis();
+            onValue(docId, time);
         }
 
         /*
