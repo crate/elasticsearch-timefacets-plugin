@@ -112,6 +112,7 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
                 final LongValues.Iter iter = values.getIter(docId);
                 while (iter.hasNext()) {
                     dateTime.setMillis(iter.next());
+                    //dateTime = new MutableDateTime(iter.next());
                     onValue(docId, dateTime);
                     total++;
                 }

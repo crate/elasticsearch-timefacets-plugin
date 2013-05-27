@@ -8,15 +8,15 @@ import org.elasticsearch.common.joda.time.Chronology;
 import org.elasticsearch.common.joda.time.DateTimeField;
 import org.elasticsearch.common.joda.time.DateTimeZone;
 import org.elasticsearch.common.joda.time.MutableDateTime;
-import org.elasticsearch.common.joda.time.chrono.ISOChronology;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.trove.impl.Constants;
 import org.elasticsearch.common.trove.map.hash.TObjectIntHashMap;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.fielddata.IndexNumericFieldData;
+import org.elasticsearch.index.fielddata.plain.LongArrayIndexFieldData;
+import org.elasticsearch.index.fielddata.plain.PagedBytesIndexFieldData;
 import org.elasticsearch.index.mapper.FieldMapper;
-import org.elasticsearch.search.facet.Facet;
 import org.elasticsearch.search.facet.FacetExecutor;
 import org.elasticsearch.search.facet.FacetParser;
 import org.elasticsearch.search.facet.FacetPhaseExecutionException;
@@ -24,8 +24,6 @@ import org.elasticsearch.search.facet.datehistogram.DateHistogramFacet;
 import org.elasticsearch.search.internal.SearchContext;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Parser is responsible to make sense of a SearchRequests "facet query" and
@@ -74,7 +72,7 @@ public class DistinctDateHistogramFacetParser extends AbstractComponent implemen
     @Override
     public String[] types() {
         return new String[]{
-            //StringInternalDistinctDateHistogramFacet.TYPE,
+            StringInternalDistinctDateHistogramFacet.TYPE,
             LongInternalDistinctDateHistogramFacet.TYPE
         };
     }
@@ -200,13 +198,15 @@ public class DistinctDateHistogramFacetParser extends AbstractComponent implemen
             }
         }
 
-        IndexNumericFieldData distinctFieldData = context.fieldData().getForField(distinctFieldMapper);
-        IndexNumericFieldData keyIndexFieldData = context.fieldData().getForField(keyMapper);
+
 
         if (distinctFieldMapper.fieldDataType().getType().equals("string")) {
-            return null;
-            //return new StringDistinctDateHistogramFacetExecutor(keyIndexFieldData, distinctFieldData, dateTime, interval, comparatorType);
+            PagedBytesIndexFieldData distinctFieldData = context.fieldData().getForField(distinctFieldMapper);
+            LongArrayIndexFieldData keyIndexFieldData = context.fieldData().getForField(keyMapper);
+            return new StringDistinctDateHistogramFacetExecutor(keyIndexFieldData, distinctFieldData, dateTime, interval, comparatorType);
         } else if (distinctFieldMapper.fieldDataType().getType().equals("long"))  {
+            IndexNumericFieldData distinctFieldData = context.fieldData().getForField(distinctFieldMapper);
+            IndexNumericFieldData keyIndexFieldData = context.fieldData().getForField(keyMapper);
             return new LongDistinctDateHistogramFacetExecutor(keyIndexFieldData, distinctFieldData, dateTime, interval, comparatorType);
         } else {
             throw new FacetPhaseExecutionException(facetName, "distinct field [" + distinctField + "] is not of type string or long");

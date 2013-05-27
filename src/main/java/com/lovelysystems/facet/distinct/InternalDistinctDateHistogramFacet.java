@@ -30,7 +30,7 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
 
     public static void registerStreams() {
         LongInternalDistinctDateHistogramFacet.registerStreams();
-        //StringInternalDistinctDateHistogramFacet.registerStreams();
+        StringInternalDistinctDateHistogramFacet.registerStreams();
     }
 
     /**

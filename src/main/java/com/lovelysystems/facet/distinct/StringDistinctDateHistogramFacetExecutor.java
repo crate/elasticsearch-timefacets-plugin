@@ -1,133 +1,165 @@
-//package com.lovelysystems.facet.distinct;
-//
-//import org.apache.lucene.index.IndexReader;
-//import org.elasticsearch.common.CacheRecycler;
-//import org.elasticsearch.common.joda.time.MutableDateTime;
-//import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
-//import org.elasticsearch.index.mapper.FieldMapper;
-//import org.elasticsearch.index.mapper.MapperService;
-//import org.elasticsearch.search.facet.Facet;
-//import org.elasticsearch.search.facet.FacetExecutor;
-//import org.elasticsearch.search.facet.FacetPhaseExecutionException;
-//import org.elasticsearch.search.facet.datehistogram.DateHistogramFacet;
-//import org.elasticsearch.search.internal.SearchContext;
-//
-//import java.io.IOException;
-//
-///**
-// * Collect the distinct values per time interval.
-// *
-// * Field cache is used for the key and the value field.
-// */
-//public class StringDistinctDateHistogramFacetExecutor extends FacetExecutor {
-//
-//    private final String keyIndexFieldName;
-//    private final String valueIndexFieldName;
-//
-//    private MutableDateTime dateTime;
-//
-//    private final DateHistogramFacet.ComparatorType comparatorType;
-//
-//    private final FieldDataCache fieldDataCache;
-//
-//    private final FieldDataType keyFieldDataType;
-//    private LongFieldData keyFieldData;
-//    private final FieldDataType valueFieldDataType;
-//
-//    private final DateHistogramProc histoProc;
-//
-//    public StringDistinctDateHistogramFacetExecutor(String facetName, String keyFieldName, String distinctFieldName, MutableDateTime dateTime, long interval, DateHistogramFacet.ComparatorType comparatorType, SearchContext context) {
-//        super(facetName);
-//        this.dateTime = dateTime;
-//        this.comparatorType = comparatorType;
-//        this.fieldDataCache = context.fieldDataCache();
-//
-//        MapperService.SmartNameFieldMappers smartMappers = context.mapperService().smartName(keyFieldName);
-//        if (smartMappers == null || !smartMappers.hasMapper()) {
-//            throw new FacetPhaseExecutionException(facetName, "No mapping found for field [" + keyFieldName + "]");
-//        }
-//
-//        // add type filter if there is exact doc mapper associated with it
-//        if (smartMappers.hasDocMapper()) {
-//            setFilter(context.filterCache().cache(smartMappers.docMapper().typeFilter()));
-//        }
-//
-//        keyIndexFieldName = smartMappers.mapper().names().indexName();
-//        keyFieldDataType = smartMappers.mapper().fieldDataType();
-//
-//
-//        FieldMapper mapper = context.smartNameFieldMapper(distinctFieldName);
-//        if (mapper == null) {
-//            throw new FacetPhaseExecutionException(facetName, "No mapping found for value_field [" + distinctFieldName + "]");
-//        }
-//        valueIndexFieldName = mapper.names().indexName();
-//        valueFieldDataType = mapper.fieldDataType();
-//
-//        this.histoProc = new DateHistogramProc(interval);
-//    }
-//
-//    @Override protected void doSetNextReader(IndexReader reader, int docBase) throws IOException {
-//        keyFieldData = (LongFieldData) fieldDataCache.cache(keyFieldDataType, reader, keyIndexFieldName);
-//        histoProc.valueFieldData = (StringFieldData) fieldDataCache.cache(valueFieldDataType, reader, valueIndexFieldName);
-//    }
-//
-//    @Override protected void doCollect(int doc) throws IOException {
-//        keyFieldData.forEachValueInDoc(doc, dateTime, histoProc);
-//    }
-//
-//    @Override public Facet facet() {
-//        return new StringInternalDistinctDateHistogramFacet(facetName, comparatorType, histoProc.entries, true);
-//    }
-//
-//    /**
-//     * Collect the time intervals in value aggregators for each time interval found.
-//     * The value aggregator finally contains the facet entry.
-//     */
-//    public static class DateHistogramProc implements LongFieldData.DateValueInDocProc {
-//
-//        final ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> entries = CacheRecycler.popLongObjectMap();
-//
-//        StringFieldData valueFieldData;
-//
-//        private final long interval;
-//
-//        final ValueAggregator valueAggregator = new ValueAggregator();
-//
-//        public DateHistogramProc(long interval) {
-//            this.interval = interval;
-//        }
-//
-//        /*
-//         * for each time interval an entry is created in which the distinct values are aggregated
-//         */
-//        @Override public void onValue(int docId, MutableDateTime dateTime) {
-//            long time = dateTime.getMillis();
-//            if (interval != 1) {
-//                time = ((time / interval) * interval);
-//            }
-//
-//            InternalDistinctDateHistogramFacet.DistinctEntry entry = entries.get(time);
-//            if (entry == null) {
-//                entry = new InternalDistinctDateHistogramFacet.DistinctEntry(time);
-//                entries.put(time, entry);
-//            }
-//            valueAggregator.entry = entry;
-//            valueFieldData.forEachValueInDoc(docId, valueAggregator);
-//        }
-//
-//        /*
-//         * aggregates the values in a set
-//         */
-//        public static class ValueAggregator implements StringFieldData.StringValueInDocProc {
-//
-//            InternalDistinctDateHistogramFacet.DistinctEntry entry;
-//
-//            @Override public void onValue(int docId, String value) {
-//                entry.getValue().add(value);
-//            }
-//
-//            @Override public void onMissing(int docId) {
-//            }
-//        }
-//    }
-//}
+package com.lovelysystems.facet.distinct;
+
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.util.BytesRef;
+import org.elasticsearch.common.CacheRecycler;
+import org.elasticsearch.common.joda.time.MutableDateTime;
+import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
+import org.elasticsearch.index.fielddata.BytesValues;
+import org.elasticsearch.index.fielddata.LongValues;
+import org.elasticsearch.index.fielddata.plain.LongArrayIndexFieldData;
+import org.elasticsearch.index.fielddata.plain.PagedBytesIndexFieldData;
+import org.elasticsearch.search.facet.FacetExecutor;
+import org.elasticsearch.search.facet.InternalFacet;
+import org.elasticsearch.search.facet.datehistogram.DateHistogramFacet;
+import org.elasticsearch.search.facet.terms.strings.HashedAggregator;
+
+import java.io.IOException;
+
+/**
+ * Collect the distinct values per time interval.
+ */
+public class StringDistinctDateHistogramFacetExecutor extends FacetExecutor {
+
+    private final LongArrayIndexFieldData keyIndexFieldData;
+    private final PagedBytesIndexFieldData distinctIndexFieldData;
+
+
+    private MutableDateTime dateTime;
+    private final long interval;
+    private final DateHistogramFacet.ComparatorType comparatorType;
+    final ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> entries;
+
+    public StringDistinctDateHistogramFacetExecutor(LongArrayIndexFieldData keyIndexFieldData,
+                                                    PagedBytesIndexFieldData distinctIndexFieldData,
+                                                    MutableDateTime dateTime, long interval, DateHistogramFacet.ComparatorType comparatorType) {
+        this.comparatorType = comparatorType;
+        this.keyIndexFieldData = keyIndexFieldData;
+        this.distinctIndexFieldData = distinctIndexFieldData;
+        this.entries = CacheRecycler.popLongObjectMap();
+        this.dateTime = dateTime;
+        this.interval = interval;
+    }
+
+    @Override
+    public Collector collector() {
+        return new Collector();
+    }
+
+    @Override
+    public InternalFacet buildFacet(String facetName) {
+        return new StringInternalDistinctDateHistogramFacet(facetName, comparatorType, entries, true);
+    }
+
+    /*
+     * Similar to the Collector from the ValueDateHistogramFacetExecutor
+     *
+     * Only difference is that dateTime and interval is passed to DateHistogramProc instead of tzRounding
+     */
+    class Collector extends FacetExecutor.Collector {
+
+        private LongValues keyValues;
+        private final DateHistogramProc histoProc;
+
+        public Collector() {
+            this.histoProc = new DateHistogramProc(entries, dateTime, interval);
+        }
+
+        @Override
+        public void setNextReader(AtomicReaderContext context) throws IOException {
+            keyValues = keyIndexFieldData.load(context).getLongValues();
+            histoProc.valueValues = distinctIndexFieldData.load(context).getBytesValues();
+        }
+
+        @Override
+        public void collect(int doc) throws IOException {
+            histoProc.onDoc(doc, keyValues);
+        }
+
+        @Override
+        public void postCollection() {
+        }
+    }
+
+
+    /**
+     * Collect the time intervals in value aggregators for each time interval found.
+     * The value aggregator finally contains the facet entry.
+     */
+    public static class DateHistogramProc  {
+
+        private int total;
+        private int missing;
+        BytesValues.WithOrdinals valueValues;
+        private final long interval;
+        private MutableDateTime dateTime;
+        final ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> entries;
+
+        final ValueAggregator valueAggregator = new ValueAggregator();
+
+        public DateHistogramProc(ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry>  entries, MutableDateTime dateTime, long interval) {
+            this.dateTime = dateTime;
+            this.entries = entries;
+            this.interval = interval;
+        }
+
+        /*
+         * Pass a dateTime to onValue to account for the interval and rounding that is set in the Parser
+         */
+        public void onDoc(int docId, LongValues values) {
+            if (values.hasValue(docId)) {
+                final LongValues.Iter iter = values.getIter(docId);
+                while (iter.hasNext()) {
+                    dateTime.setMillis(iter.next());
+                    onValue(docId, dateTime);
+                    total++;
+                }
+            } else {
+                missing++;
+            }
+        }
+
+        protected void onValue(int docId, MutableDateTime dateTime) {
+            long time = dateTime.getMillis();
+            onValue(docId, time);
+        }
+
+        /*
+         * for each time interval an entry is created in which the distinct values are aggregated
+         */
+        protected void onValue(int docId, long time) {
+            if (interval != 1) {
+                time = ((time / interval) * interval);
+            }
+
+            InternalDistinctDateHistogramFacet.DistinctEntry entry = entries.get(time);
+            if (entry == null) {
+                entry = new InternalDistinctDateHistogramFacet.DistinctEntry(time);
+                entries.put(time, entry);
+            }
+            valueAggregator.entry = entry;
+            valueAggregator.onDoc(docId, valueValues);
+        }
+
+        public final int total() {
+            return total;
+        }
+
+        public final int missing() {
+            return missing;
+        }
+
+        /*
+         * aggregates the values in a set
+         */
+        public final static class ValueAggregator extends HashedAggregator {
+
+            InternalDistinctDateHistogramFacet.DistinctEntry entry;
+
+            @Override
+            protected void onValue(int docId, BytesRef value, int hashCode, BytesValues values) {
+                entry.getValues().add(value);
+            }
+        }
+    }
+}
