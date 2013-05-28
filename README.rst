@@ -1,46 +1,12 @@
-===================================
-Lovelysystems Elasticsearch Plugins
-===================================
-
-
-Uncached Facets
-===============
-
-The uncached facets try to avoid the field cache to save memory.
-
-Date Histogram for Int/Long Values
-----------------------------------
-
-Example::
-
-    {
-        "query" : {
-            "match_all" : {}
-        },
-        "facets" : {
-            "histo1" : {
-                "uncached_date_histogram" : {
-                    "field" : "field_name",
-                    "value_field" : "value_field_name",
-                    "interval" : "day"
-                }
-            }
-        }
-    }
-
-The field cache is used for "field" but not for "value_field".
-
-Works like the "date_histogram" with these exceptions:
-
-    - value_field is mandatory
-    - value_field must be Int or Long
-    - no value_script
+=====================
+Elasticsearch Plugins
+=====================
 
 
 Distinct Date Histogram Facet
 =============================
 
-This facet counts distinct values for string and long fields.
+This facet counts distinct values for string and numeric fields.
 
 Example::
 
@@ -76,15 +42,16 @@ outer "count" is the number of total distinct values.
 Works like the "date_histogram" with these exceptions:
 
     - value_field is mandatory
-    - value_field must be String
+    - value_field must be of type String or Numeric
     - no value_script
+
 
 "Latest" Facet
 ==============
 
 This facet collapses matching documents to ``key_field`` and uses only
 the document with the highest value of ``ts_field``.
- The result is always sorted on descending ``value_field``.
+The result is always sorted on descending ``value_field``.
 
 Example::
 
@@ -132,12 +99,27 @@ setting the ``_routing`` attribute upon indexing. This is needed for
 performance reasons, so the fields can be collapsed per shard.
 
 Currently the ``key_field`` and ``ts_field`` need to be longs, while
-the ``value_field`` is required to be of type integer.
+the ``value_field`` is required to be of type Numeric.
+
+
+Installation
+============
+
+* Clone this repo with git clone
+  git@github.com:crate/elasticsearch-timefacets-plugin.git
+* Checkout the tag (find out via git tag) you want to build with
+  (possibly master is not for your elasticsearch version)
+* Run: mvn clean package -DskipTests=true – this does not run any unit
+  tests, as they take some time. If you want to run them, better run
+  mvn clean package
+* Install the plugin: /path/to/elasticsearch/bin/plugin -install
+  elasticsearch-timefacets-plugin -url
+  file:///$PWD/target/releases/elasticsearch-timefacets-plugin-$version.jar
 
 Maven
 =====
 
-To use this project in with maven follow the steps described at
+To use this project with maven follow the steps described at
 https://github.com/lovelysystems/maven
 
 
