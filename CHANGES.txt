@@ -2,6 +2,8 @@
 Changes for Lovelysystems Elasticsearch Plugins
 ===============================================
 
+ - renamed package and namespace
+
  - removed 'Uncached facets'
 
  - elasticsearch 0.90.0 compatibility
