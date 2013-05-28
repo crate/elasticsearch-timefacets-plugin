@@ -99,7 +99,7 @@ setting the ``_routing`` attribute upon indexing. This is needed for
 performance reasons, so the fields can be collapsed per shard.
 
 Currently the ``key_field`` and ``ts_field`` need to be longs, while
-        the ``value_field`` is required to be of type Numeric.
+the ``value_field`` is required to be of type Numeric.
 
 
 Installation
