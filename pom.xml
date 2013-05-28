@@ -2,13 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <name>elasticsearch-ls-plugins</name>
+    <name>elasticsearch-timefacets-plugin</name>
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.lovelysystems</groupId>
-    <artifactId>elasticsearch-ls-plugins</artifactId>
+    <groupId>crate</groupId>
+    <artifactId>elasticsearch-timefacets-plugin</artifactId>
     <version>0.5.0</version>
     <packaging>jar</packaging>
-    <description>Extensions for ElasticSearch</description>
+    <description>A time-facets plugin for ElasticSearch</description>
     <inceptionYear>2009</inceptionYear>
     <licenses>
         <license>
@@ -18,10 +18,10 @@
         </license>
     </licenses>
     <scm>
-        <connection>scm:git:git@github.com:lovelysystems/elasticsearch-ls-plugins.git</connection>
-        <developerConnection>scm:git:git@github.com:lovelysystems/elasticsearch-ls-plugins.git
+        <connection>scm:git:git@github.com:crate/elasticsearch-timefacets-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:crate/elasticsearch-timefacets-plugin.git
         </developerConnection>
-        <url>http://github.com/lovelysystems/elasticsearch-ls-plugins</url>
+        <url>http://github.com/crate/elasticsearch-timefacets-plugin</url>
     </scm>
 
     <parent>
@@ -143,4 +143,8 @@
             </plugin>
         </plugins>
     </build>
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/crate/elasticsearch-timefacets-plugin/issues</url>
+    </issueManagement>
 </project>
