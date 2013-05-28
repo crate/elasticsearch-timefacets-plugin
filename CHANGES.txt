@@ -2,6 +2,9 @@
 Changes for Lovelysystems Elasticsearch Plugins
 ===============================================
 
+2013/05/28 0.6.0
+================
+
  - renamed package and namespace
 
  - removed 'Uncached facets'
