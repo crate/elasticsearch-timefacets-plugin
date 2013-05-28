@@ -1,25 +1,28 @@
-package com.lovelysystems.facet.distinct;
+package crate.elasticsearch.facet.distinct;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.util.BytesRef;
 import org.elasticsearch.common.CacheRecycler;
 import org.elasticsearch.common.joda.time.MutableDateTime;
 import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
-import org.elasticsearch.index.fielddata.IndexNumericFieldData;
+import org.elasticsearch.index.fielddata.BytesValues;
 import org.elasticsearch.index.fielddata.LongValues;
+import org.elasticsearch.index.fielddata.plain.LongArrayIndexFieldData;
+import org.elasticsearch.index.fielddata.plain.PagedBytesIndexFieldData;
 import org.elasticsearch.search.facet.FacetExecutor;
 import org.elasticsearch.search.facet.InternalFacet;
-import org.elasticsearch.search.facet.LongFacetAggregatorBase;
 import org.elasticsearch.search.facet.datehistogram.DateHistogramFacet;
+import org.elasticsearch.search.facet.terms.strings.HashedAggregator;
 
 import java.io.IOException;
 
 /**
  * Collect the distinct values per time interval.
  */
-public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
+public class StringDistinctDateHistogramFacetExecutor extends FacetExecutor {
 
-    private final IndexNumericFieldData keyIndexFieldData;
-    private final IndexNumericFieldData distinctIndexFieldData;
+    private final LongArrayIndexFieldData keyIndexFieldData;
+    private final PagedBytesIndexFieldData distinctIndexFieldData;
 
 
     private MutableDateTime dateTime;
@@ -27,9 +30,9 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
     private final DateHistogramFacet.ComparatorType comparatorType;
     final ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> entries;
 
-    public LongDistinctDateHistogramFacetExecutor(IndexNumericFieldData keyIndexFieldData,
-                                                  IndexNumericFieldData distinctIndexFieldData,
-                                                  MutableDateTime dateTime, long interval, DateHistogramFacet.ComparatorType comparatorType) {
+    public StringDistinctDateHistogramFacetExecutor(LongArrayIndexFieldData keyIndexFieldData,
+                                                    PagedBytesIndexFieldData distinctIndexFieldData,
+                                                    MutableDateTime dateTime, long interval, DateHistogramFacet.ComparatorType comparatorType) {
         this.comparatorType = comparatorType;
         this.keyIndexFieldData = keyIndexFieldData;
         this.distinctIndexFieldData = distinctIndexFieldData;
@@ -45,7 +48,7 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
 
     @Override
     public InternalFacet buildFacet(String facetName) {
-        return new LongInternalDistinctDateHistogramFacet(facetName, comparatorType, entries, true);
+        return new StringInternalDistinctDateHistogramFacet(facetName, comparatorType, entries, true);
     }
 
     /*
@@ -65,7 +68,7 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
         @Override
         public void setNextReader(AtomicReaderContext context) throws IOException {
             keyValues = keyIndexFieldData.load(context).getLongValues();
-            histoProc.valueValues = distinctIndexFieldData.load(context).getLongValues();
+            histoProc.valueValues = distinctIndexFieldData.load(context).getBytesValues();
         }
 
         @Override
@@ -82,14 +85,12 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
     /**
      * Collect the time intervals in value aggregators for each time interval found.
      * The value aggregator finally contains the facet entry.
-     *
-     *
      */
-    public static class DateHistogramProc extends LongFacetAggregatorBase {
+    public static class DateHistogramProc  {
 
         private int total;
         private int missing;
-        LongValues valueValues;
+        BytesValues.WithOrdinals valueValues;
         private final long interval;
         private MutableDateTime dateTime;
         final ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> entries;
@@ -103,16 +104,13 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
         }
 
         /*
-         * Extend the onDoc implementation of LongFacetAggregatorBase to pass a dateTime to onValue
-         * to account for the interval and rounding that is set in the Parser
+         * Pass a dateTime to onValue to account for the interval and rounding that is set in the Parser
          */
-        @Override
         public void onDoc(int docId, LongValues values) {
             if (values.hasValue(docId)) {
                 final LongValues.Iter iter = values.getIter(docId);
                 while (iter.hasNext()) {
                     dateTime.setMillis(iter.next());
-                    //dateTime = new MutableDateTime(iter.next());
                     onValue(docId, dateTime);
                     total++;
                 }
@@ -129,7 +127,6 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
         /*
          * for each time interval an entry is created in which the distinct values are aggregated
          */
-        @Override
         protected void onValue(int docId, long time) {
             if (interval != 1) {
                 time = ((time / interval) * interval);
@@ -144,15 +141,23 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
             valueAggregator.onDoc(docId, valueValues);
         }
 
+        public final int total() {
+            return total;
+        }
+
+        public final int missing() {
+            return missing;
+        }
+
         /*
          * aggregates the values in a set
          */
-        public final static class ValueAggregator extends LongFacetAggregatorBase {
+        public final static class ValueAggregator extends HashedAggregator {
 
             InternalDistinctDateHistogramFacet.DistinctEntry entry;
 
             @Override
-            public void onValue(int docId, long value) {
+            protected void onValue(int docId, BytesRef value, int hashCode, BytesValues values) {
                 entry.getValues().add(value);
             }
         }

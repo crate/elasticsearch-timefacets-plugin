@@ -1,4 +1,4 @@
-package com.lovelysystems.facet.test;
+package crate.elasticsearch.facet.test;
 
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.logging.ESLogger;
@@ -6,7 +6,6 @@ import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.network.NetworkUtils;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.node.Node;
 
 import java.util.Map;

@@ -1,4 +1,4 @@
-package com.lovelysystems.facet.distinct;
+package crate.elasticsearch.facet.distinct;
 
 import org.elasticsearch.common.CacheRecycler;
 import org.elasticsearch.common.trove.ExtTLongObjectHashMap;

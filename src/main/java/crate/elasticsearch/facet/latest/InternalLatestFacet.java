@@ -1,9 +1,8 @@
-package com.lovelysystems.facet.latest;
-
-import java.io.IOException;
-import java.util.List;
+package crate.elasticsearch.facet.latest;
 
 import org.apache.lucene.util.PriorityQueue;
+import org.elasticsearch.common.bytes.BytesReference;
+import org.elasticsearch.common.bytes.HashedBytesArray;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.trove.map.TLongObjectMap;
@@ -13,40 +12,74 @@ import org.elasticsearch.common.xcontent.XContentBuilderString;
 import org.elasticsearch.search.facet.Facet;
 import org.elasticsearch.search.facet.InternalFacet;
 
-public class LongInternalLatestFacet extends InternalLatestFacet {
+import java.io.IOException;
+import java.util.List;
 
-    private static final String STREAM_TYPE = "long_latest";
+/**
+ * Collapses matching documents to ``key_field`` and uses only
+ * the document with the highest value of ``ts_field``.
+  */
+public class InternalLatestFacet extends InternalFacet {
+
+    public static final String TYPE = "latest";
+
+    private static final BytesReference STREAM_TYPE = new HashedBytesArray(TYPE);
+
+    protected String name;
+    protected int size;
+    protected int start;
+    protected int total = 0;
 
     @Override
-    public String streamType() {
+    public BytesReference streamType() {
         return STREAM_TYPE;
     }
 
-    public static void registerStreams() {
-        InternalFacet.Streams.registerStream(STREAM, STREAM_TYPE);
+    @Override
+    public Facet reduce(List<Facet> facets) {
+        InternalLatestFacet first = (InternalLatestFacet) facets.get(0);
+        return first.reduce(name, facets);
     }
 
-    static InternalFacet.Stream STREAM = new InternalFacet.Stream() {
+    public static void registerStreams() {
+        Streams.registerStream(STREAM, STREAM_TYPE);
+    }
+
+    static Stream STREAM = new Stream() {
         @Override
-        public Facet readFacet(String type, StreamInput in) throws IOException {
+        public Facet readFacet(StreamInput in) throws IOException {
             return readDistinctTermsFacet(in);
         }
     };
 
-    public LongInternalLatestFacet(String facetName, int size, int start, int total) {
-        super(facetName, size, start, total);
+    public String type() {
+        return TYPE;
     }
 
-    public LongInternalLatestFacet() {
+    @Override
+    public String getType() {
+        return type();
+    }
+
+    public InternalLatestFacet() {
         super();
     }
+
+    public InternalLatestFacet(String facetName, int size, int start, int total) {
+        super(facetName);
+        this.size = size;
+        this.start = start;
+        this.name = facetName;
+        this.total = total;
+    }
+
 
     public EntryPriorityQueue queue;
 
     public static class EntryPriorityQueue extends PriorityQueue<Entry> {
 
         public EntryPriorityQueue(int size) {
-            initialize(size);
+            super(size);
         }
 
         @Override
@@ -55,7 +88,7 @@ public class LongInternalLatestFacet extends InternalLatestFacet {
         }
     }
 
-    public void insert(TLongObjectMap<LongInternalLatestFacet.Entry> entries) {
+    public void insert(TLongObjectMap<InternalLatestFacet.Entry> entries) {
         if (queue == null) {
             this.queue = new EntryPriorityQueue(start + size);
         }
@@ -71,20 +104,19 @@ public class LongInternalLatestFacet extends InternalLatestFacet {
 
     public static class Entry {
         public long ts;
-        public long value;
+        public int value;
         public long key;
 
-        public Entry(long ts, long value) {
+        public Entry(long ts, int value) {
             this.ts = ts;
             this.value = value;
         }
 
-        public Entry(long ts, long value, long key) {
+        public Entry(long ts, int value, long key) {
             this.ts = ts;
             this.value = value;
             this.key = key;
         }
-
     }
 
     public Facet reduce(String name, List<Facet> facets) {
@@ -92,7 +124,7 @@ public class LongInternalLatestFacet extends InternalLatestFacet {
             return facets.get(0);
         }
         for (Facet facet : facets) {
-            LongInternalLatestFacet f = (LongInternalLatestFacet) facet;
+            InternalLatestFacet f = (InternalLatestFacet) facet;
             if (this == facet) {
                 continue;
             }
@@ -134,30 +166,32 @@ public class LongInternalLatestFacet extends InternalLatestFacet {
         return builder;
     }
 
-    public static LongInternalLatestFacet readDistinctTermsFacet(StreamInput in)
+    public static InternalLatestFacet readDistinctTermsFacet(StreamInput in)
             throws IOException {
-        LongInternalLatestFacet facet = new LongInternalLatestFacet();
+        InternalLatestFacet facet = new InternalLatestFacet();
         facet.readFrom(in);
         return facet;
     }
 
     @Override
     public void readFrom(StreamInput in) throws IOException {
-        this.name = in.readUTF();
+        super.readFrom(in);
+        this.name = in.readString();
         this.size = in.readVInt();
         this.start = in.readVInt();
         this.total = in.readVInt();
         this.queue = new EntryPriorityQueue(start + size);
         int size = in.readVInt();
         for (int i = 0; i < size; i++) {
-            queue.insertWithOverflow(new Entry(in.readVLong(), in.readVLong(),
+            queue.insertWithOverflow(new Entry(in.readVLong(), in.readVInt(),
                     in.readVLong()));
         }
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
-        out.writeUTF(name);
+        super.writeTo(out);
+        out.writeString(name);
         out.writeVInt(size);
         out.writeVInt(start);
         out.writeVInt(total);
@@ -165,8 +199,21 @@ public class LongInternalLatestFacet extends InternalLatestFacet {
         while (queue.size() > 0) {
             Entry e = queue.pop();
             out.writeVLong(e.ts);
-            out.writeVLong(e.value);
+            out.writeVInt(e.value);
             out.writeVLong(e.key);
         }
+    }
+
+    static final class Fields {
+        static final XContentBuilderString _TYPE = new XContentBuilderString(
+                "_type");
+        static final XContentBuilderString TS = new XContentBuilderString("ts");
+        static final XContentBuilderString TOTAL = new XContentBuilderString("total");
+        static final XContentBuilderString ENTRIES = new XContentBuilderString(
+                "entries");
+        static final XContentBuilderString KEY = new XContentBuilderString(
+                "key");
+        static final XContentBuilderString VALUE = new XContentBuilderString(
+                "value");
     }
 }

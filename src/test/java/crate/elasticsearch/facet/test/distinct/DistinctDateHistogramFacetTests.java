@@ -1,8 +1,8 @@
-package com.lovelysystems.facet.test.distinct;
+package crate.elasticsearch.facet.test.distinct;
 
 
-import com.lovelysystems.facet.distinct.InternalDistinctDateHistogramFacet;
-import com.lovelysystems.facet.test.AbstractNodes;
+import crate.elasticsearch.facet.distinct.InternalDistinctDateHistogramFacet;
+import crate.elasticsearch.facet.test.AbstractNodes;
 import org.elasticsearch.action.search.SearchPhaseExecutionException;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;

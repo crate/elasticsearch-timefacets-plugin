@@ -1,4 +1,4 @@
-package com.lovelysystems.facet.distinct;
+package crate.elasticsearch.facet.distinct;
 
 import org.elasticsearch.common.collect.ImmutableMap;
 import org.elasticsearch.common.collect.MapBuilder;
