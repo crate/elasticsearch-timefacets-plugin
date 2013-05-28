@@ -6,7 +6,7 @@ Elasticsearch Plugins
 Distinct Date Histogram Facet
 =============================
 
-This facet counts distinct values for string and long fields.
+This facet counts distinct values for string and numeric fields.
 
 Example::
 
