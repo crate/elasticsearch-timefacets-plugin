@@ -2,6 +2,11 @@
 Changes for Lovelysystems Elasticsearch Plugins
 ===============================================
 
+2013/06/10 0.7.0
+================
+
+ - elasticsearch 0.90.1 compatibility
+
 2013/05/28 0.6.0
 ================
 
