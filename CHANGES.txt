@@ -5,6 +5,9 @@ Changes for Lovelysystems Elasticsearch Plugins
 Unreleased
 ==========
 
+2013/06/18 0.7.1
+================
+
  - fixed serialization error in the DistinctDateHistogram (#6)
 
  - improved error message in exceptions
