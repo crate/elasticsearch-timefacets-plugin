@@ -23,7 +23,7 @@ public class InternalLatestFacet extends InternalFacet {
 
     public static final String TYPE = "latest";
 
-    private static final BytesReference STREAM_TYPE = new HashedBytesArray(TYPE);
+    private static final BytesReference STREAM_TYPE = new HashedBytesArray(TYPE.getBytes());
 
     protected String name;
     protected int size;
