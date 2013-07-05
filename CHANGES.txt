@@ -5,6 +5,9 @@ Changes for Lovelysystems Elasticsearch Plugins
 Unreleased
 ==========
 
+2013/07/05 0.8.0
+================
+
  - minor changes due to changed constructor of HashedBytesArray
 
  - elasticsearch 0.90.2 compatibility
