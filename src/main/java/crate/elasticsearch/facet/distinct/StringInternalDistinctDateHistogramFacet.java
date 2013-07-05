@@ -18,7 +18,7 @@ import java.util.Set;
  */
 public class StringInternalDistinctDateHistogramFacet extends InternalDistinctDateHistogramFacet {
 
-    private static final BytesReference STREAM_TYPE = new HashedBytesArray("DistinctDateHistogram");
+    private static final BytesReference STREAM_TYPE = new HashedBytesArray("DistinctDateHistogram".getBytes());
 
 
     public static void registerStreams() {

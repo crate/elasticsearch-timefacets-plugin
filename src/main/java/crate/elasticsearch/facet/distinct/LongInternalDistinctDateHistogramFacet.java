@@ -12,7 +12,7 @@ import java.util.*;
 
 public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDateHistogramFacet {
 
-    private static final BytesReference STREAM_TYPE = new HashedBytesArray("LongDistinctDateHistogram");
+    private static final BytesReference STREAM_TYPE = new HashedBytesArray("LongDistinctDateHistogram".getBytes());
 
     public static void registerStreams() {
         Streams.registerStream(STREAM, STREAM_TYPE);
