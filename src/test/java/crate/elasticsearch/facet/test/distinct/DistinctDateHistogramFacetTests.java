@@ -28,6 +28,8 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
         // setup two nodes to have the transport protocol tested
         startNode("server1");
         startNode("server2");
+        startNode("server3");
+        startNode("server4");
         client = getClient();
         setupTemplates(client);
     }

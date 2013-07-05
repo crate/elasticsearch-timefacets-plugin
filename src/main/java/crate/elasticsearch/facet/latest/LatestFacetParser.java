@@ -71,7 +71,7 @@ public class LatestFacetParser extends AbstractComponent implements FacetParser 
                 && !(keyFieldMapper.fieldDataType().getType().equals(LatestFacetExecutor.keyDataType.getType()))) {
             throw new FacetPhaseExecutionException(facetName,
                     "key field must be of type long but is "
-                            + keyFieldMapper.fieldDataType());
+                            + keyFieldMapper.fieldDataType().getType());
         }
 
         FieldMapper tsFieldMapper = context.mapperService().smartNameFieldMapper(tsFieldName);
@@ -79,7 +79,7 @@ public class LatestFacetParser extends AbstractComponent implements FacetParser 
                 && !(tsFieldMapper.fieldDataType().getType().equals(LatestFacetExecutor.tsDataType.getType()))) {
             throw new FacetPhaseExecutionException(facetName,
                     "ts field must be of type long but is "
-                            + tsFieldMapper.fieldDataType());
+                            + tsFieldMapper.fieldDataType().getType());
         }
 
         FieldMapper valueFieldMapper = context.mapperService().smartNameFieldMapper(valueFieldName);

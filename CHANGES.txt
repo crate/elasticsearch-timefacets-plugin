@@ -2,9 +2,19 @@
 Changes for Lovelysystems Elasticsearch Plugins
 ===============================================
 
+Unreleased
+==========
+
  - minor changes due to changed constructor of HashedBytesArray
 
  - elasticsearch 0.90.2 compatibility
+
+2013/06/18 0.7.1
+================
+
+ - fixed serialization error in the DistinctDateHistogram (#6)
+
+ - improved error message in exceptions
 
 2013/06/10 0.7.0
 ================
