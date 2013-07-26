@@ -5,6 +5,9 @@ Changes for Lovelysystems Elasticsearch Plugins
 Unreleased
 ==========
 
+2013/07/26 0.8.1
+================
+
  - fixed a NullPointerException that occured if a facet query was done with the
    TransportClient on a "client only node" (See #8)
 
