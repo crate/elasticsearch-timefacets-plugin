@@ -39,7 +39,6 @@ public class DistinctDateHistogramFacetParser extends AbstractComponent implemen
     @Inject
     public DistinctDateHistogramFacetParser(Settings settings) {
         super(settings);
-        InternalDistinctDateHistogramFacet.registerStreams();
 
         dateFieldParsers = MapBuilder.<String, DateFieldParser>newMapBuilder()
                 .put("year", new DateFieldParser.YearOfCentury())
