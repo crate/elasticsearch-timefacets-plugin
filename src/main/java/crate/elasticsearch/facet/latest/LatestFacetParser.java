@@ -18,7 +18,6 @@ public class LatestFacetParser extends AbstractComponent implements FacetParser 
     @Inject
     public LatestFacetParser(Settings settings) {
         super(settings);
-        InternalLatestFacet.registerStreams();
     }
 
     @Override
