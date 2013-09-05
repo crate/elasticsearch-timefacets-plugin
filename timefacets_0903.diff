@@ -1,0 +1,365 @@
+diff --git a/pom.xml b/pom.xml
+index 8b8986c..c3b898b 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -31,7 +31,7 @@
+     </parent>
+ 
+     <properties>
+-        <elasticsearch.version>0.90.2</elasticsearch.version>
++        <elasticsearch.version>0.90.3</elasticsearch.version>
+     </properties>
+ 
+     <distributionManagement>
+diff --git a/src/main/java/crate/elasticsearch/facet/distinct/DistinctDateHistogramFacetParser.java b/src/main/java/crate/elasticsearch/facet/distinct/DistinctDateHistogramFacetParser.java
+index 5d1870b..f71f0a6 100644
+--- a/src/main/java/crate/elasticsearch/facet/distinct/DistinctDateHistogramFacetParser.java
++++ b/src/main/java/crate/elasticsearch/facet/distinct/DistinctDateHistogramFacetParser.java
+@@ -14,7 +14,7 @@ import org.elasticsearch.common.trove.map.hash.TObjectIntHashMap;
+ import org.elasticsearch.common.unit.TimeValue;
+ import org.elasticsearch.common.xcontent.XContentParser;
+ import org.elasticsearch.index.fielddata.IndexNumericFieldData;
+-import org.elasticsearch.index.fielddata.plain.LongArrayIndexFieldData;
++import org.elasticsearch.index.fielddata.plain.PackedArrayIndexFieldData;
+ import org.elasticsearch.index.fielddata.plain.PagedBytesIndexFieldData;
+ import org.elasticsearch.index.mapper.FieldMapper;
+ import org.elasticsearch.search.facet.FacetExecutor;
+@@ -201,12 +201,12 @@ public class DistinctDateHistogramFacetParser extends AbstractComponent implemen
+ 
+         if (distinctFieldMapper.fieldDataType().getType().equals("string")) {
+             PagedBytesIndexFieldData distinctFieldData = context.fieldData().getForField(distinctFieldMapper);
+-            LongArrayIndexFieldData keyIndexFieldData = context.fieldData().getForField(keyMapper);
+-            return new StringDistinctDateHistogramFacetExecutor(keyIndexFieldData, distinctFieldData, dateTime, interval, comparatorType);
++            PackedArrayIndexFieldData keyIndexFieldData = context.fieldData().getForField(keyMapper);
++            return new StringDistinctDateHistogramFacetExecutor(keyIndexFieldData, distinctFieldData, dateTime, interval, comparatorType, context.cacheRecycler());
+         } else if (distinctFieldMapper.fieldDataType().getType().equals("long"))  {
+             IndexNumericFieldData distinctFieldData = context.fieldData().getForField(distinctFieldMapper);
+             IndexNumericFieldData keyIndexFieldData = context.fieldData().getForField(keyMapper);
+-            return new LongDistinctDateHistogramFacetExecutor(keyIndexFieldData, distinctFieldData, dateTime, interval, comparatorType);
++            return new LongDistinctDateHistogramFacetExecutor(keyIndexFieldData, distinctFieldData, dateTime, interval, comparatorType, context.cacheRecycler());
+         } else {
+             throw new FacetPhaseExecutionException(facetName, "distinct field [" + distinctField + "] is not of type string or long");
+         }
+diff --git a/src/main/java/crate/elasticsearch/facet/distinct/InternalDistinctDateHistogramFacet.java b/src/main/java/crate/elasticsearch/facet/distinct/InternalDistinctDateHistogramFacet.java
+index 0254bc6..91ca323 100644
+--- a/src/main/java/crate/elasticsearch/facet/distinct/InternalDistinctDateHistogramFacet.java
++++ b/src/main/java/crate/elasticsearch/facet/distinct/InternalDistinctDateHistogramFacet.java
+@@ -1,6 +1,6 @@
+ package crate.elasticsearch.facet.distinct;
+ 
+-import org.elasticsearch.common.CacheRecycler;
++import org.elasticsearch.cache.recycler.CacheRecycler;
+ import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
+ import org.elasticsearch.common.xcontent.XContentBuilder;
+ import org.elasticsearch.common.xcontent.XContentBuilderString;
+@@ -20,12 +20,15 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
+     ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> tEntries;
+     boolean cachedEntries;
+     Collection<DistinctEntry> entries = null;
++    protected final CacheRecycler cacheRecycler;
+ 
+     public InternalDistinctDateHistogramFacet() {
++        cacheRecycler = null;
+     }
+ 
+-    public InternalDistinctDateHistogramFacet(String facetName) {
++    public InternalDistinctDateHistogramFacet(String facetName,final CacheRecycler cacheRecycler) {
+         super(facetName);
++        this.cacheRecycler = cacheRecycler;
+     }
+ 
+     public static void registerStreams() {
+@@ -102,7 +105,7 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
+ 
+     void releaseCache() {
+         if (cachedEntries) {
+-            CacheRecycler.pushLongObjectMap(tEntries);
++            cacheRecycler.pushLongObjectMap(tEntries);
+             cachedEntries = false;
+             tEntries = null;
+         }
+@@ -117,7 +120,9 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
+         static final XContentBuilderString TOTAL_COUNT = new XContentBuilderString("count");
+     }
+ 
+-    public Facet reduce(List<Facet> facets) {
++    @Override
++    public Facet reduce(ReduceContext context) { 
++        List<Facet> facets = context.facets();
+         if (facets.size() == 1) {
+             // we need to sort it
+             InternalDistinctDateHistogramFacet internalFacet = (InternalDistinctDateHistogramFacet) facets.get(0);
+@@ -127,7 +132,7 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
+             return internalFacet;
+         }
+ 
+-        ExtTLongObjectHashMap<DistinctEntry> map = CacheRecycler.popLongObjectMap();
++        ExtTLongObjectHashMap<DistinctEntry> map = context.cacheRecycler().popLongObjectMap();
+         for (Facet facet : facets) {
+             InternalDistinctDateHistogramFacet histoFacet = (InternalDistinctDateHistogramFacet) facet;
+             for (DistinctEntry fullEntry : histoFacet.entries) {
+@@ -154,7 +159,7 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
+             ordered.add(value);
+         }
+ 
+-        CacheRecycler.pushLongObjectMap(map);
++        context.cacheRecycler().pushLongObjectMap(map);
+ 
+         // just initialize it as already ordered facet
+         InternalDistinctDateHistogramFacet ret = newFacet();
+diff --git a/src/main/java/crate/elasticsearch/facet/distinct/LongDistinctDateHistogramFacetExecutor.java b/src/main/java/crate/elasticsearch/facet/distinct/LongDistinctDateHistogramFacetExecutor.java
+index bcb2abe..541999e 100644
+--- a/src/main/java/crate/elasticsearch/facet/distinct/LongDistinctDateHistogramFacetExecutor.java
++++ b/src/main/java/crate/elasticsearch/facet/distinct/LongDistinctDateHistogramFacetExecutor.java
+@@ -1,7 +1,7 @@
+ package crate.elasticsearch.facet.distinct;
+ 
+ import org.apache.lucene.index.AtomicReaderContext;
+-import org.elasticsearch.common.CacheRecycler;
++import org.elasticsearch.cache.recycler.CacheRecycler;
+ import org.elasticsearch.common.joda.time.MutableDateTime;
+ import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
+ import org.elasticsearch.index.fielddata.IndexNumericFieldData;
+@@ -26,16 +26,19 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
+     private final long interval;
+     private final DateHistogramFacet.ComparatorType comparatorType;
+     final ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> entries;
++    private final CacheRecycler cacheRecycler;
+ 
+     public LongDistinctDateHistogramFacetExecutor(IndexNumericFieldData keyIndexFieldData,
+                                                   IndexNumericFieldData distinctIndexFieldData,
+-                                                  MutableDateTime dateTime, long interval, DateHistogramFacet.ComparatorType comparatorType) {
++                                                  MutableDateTime dateTime, long interval, DateHistogramFacet.ComparatorType comparatorType,
++                                                  final CacheRecycler cacheRecycler) {
+         this.comparatorType = comparatorType;
+         this.keyIndexFieldData = keyIndexFieldData;
+         this.distinctIndexFieldData = distinctIndexFieldData;
+-        this.entries = CacheRecycler.popLongObjectMap();
++        this.entries = cacheRecycler.popLongObjectMap();
+         this.dateTime = dateTime;
+         this.interval = interval;
++        this.cacheRecycler = cacheRecycler;
+     }
+ 
+     @Override
+@@ -45,7 +48,7 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
+ 
+     @Override
+     public InternalFacet buildFacet(String facetName) {
+-        return new LongInternalDistinctDateHistogramFacet(facetName, comparatorType, entries, true);
++        return new LongInternalDistinctDateHistogramFacet(facetName, comparatorType, entries, true, cacheRecycler);
+     }
+ 
+     /*
+diff --git a/src/main/java/crate/elasticsearch/facet/distinct/LongInternalDistinctDateHistogramFacet.java b/src/main/java/crate/elasticsearch/facet/distinct/LongInternalDistinctDateHistogramFacet.java
+index df3f975..0b3f59f 100644
+--- a/src/main/java/crate/elasticsearch/facet/distinct/LongInternalDistinctDateHistogramFacet.java
++++ b/src/main/java/crate/elasticsearch/facet/distinct/LongInternalDistinctDateHistogramFacet.java
+@@ -9,6 +9,7 @@ import org.elasticsearch.search.facet.Facet;
+ 
+ import java.io.IOException;
+ import java.util.*;
++import org.elasticsearch.cache.recycler.CacheRecycler;
+ 
+ public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDateHistogramFacet {
+ 
+@@ -21,12 +22,12 @@ public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDate
+     LongInternalDistinctDateHistogramFacet() {
+     }
+ 
+-    LongInternalDistinctDateHistogramFacet(String name) {
+-        super(name);
++    LongInternalDistinctDateHistogramFacet(String name, final CacheRecycler cacheRecycler) {
++        super(name, cacheRecycler);
+     }
+ 
+-    public LongInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<DistinctEntry> entries, boolean cachedEntries) {
+-        super(name);
++    public LongInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<DistinctEntry> entries, boolean cachedEntries,final CacheRecycler cacheRecycler) {
++        super(name, cacheRecycler);
+         this.comparatorType = comparatorType;
+         this.tEntries = entries;
+         this.cachedEntries = cachedEntries;
+@@ -53,7 +54,7 @@ public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDate
+ 
+     @Override
+     protected  LongInternalDistinctDateHistogramFacet newFacet() {
+-        return new LongInternalDistinctDateHistogramFacet(getName());
++        return new LongInternalDistinctDateHistogramFacet(getName(), cacheRecycler);
+     }
+ 
+     /**
+diff --git a/src/main/java/crate/elasticsearch/facet/distinct/StringDistinctDateHistogramFacetExecutor.java b/src/main/java/crate/elasticsearch/facet/distinct/StringDistinctDateHistogramFacetExecutor.java
+index b80fcd9..0bdf5b9 100644
+--- a/src/main/java/crate/elasticsearch/facet/distinct/StringDistinctDateHistogramFacetExecutor.java
++++ b/src/main/java/crate/elasticsearch/facet/distinct/StringDistinctDateHistogramFacetExecutor.java
+@@ -2,12 +2,12 @@ package crate.elasticsearch.facet.distinct;
+ 
+ import org.apache.lucene.index.AtomicReaderContext;
+ import org.apache.lucene.util.BytesRef;
+-import org.elasticsearch.common.CacheRecycler;
++import org.elasticsearch.cache.recycler.CacheRecycler;
+ import org.elasticsearch.common.joda.time.MutableDateTime;
+ import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
+ import org.elasticsearch.index.fielddata.BytesValues;
+ import org.elasticsearch.index.fielddata.LongValues;
+-import org.elasticsearch.index.fielddata.plain.LongArrayIndexFieldData;
++import org.elasticsearch.index.fielddata.plain.PackedArrayIndexFieldData;
+ import org.elasticsearch.index.fielddata.plain.PagedBytesIndexFieldData;
+ import org.elasticsearch.search.facet.FacetExecutor;
+ import org.elasticsearch.search.facet.InternalFacet;
+@@ -21,7 +21,7 @@ import java.io.IOException;
+  */
+ public class StringDistinctDateHistogramFacetExecutor extends FacetExecutor {
+ 
+-    private final LongArrayIndexFieldData keyIndexFieldData;
++    private final PackedArrayIndexFieldData keyIndexFieldData;
+     private final PagedBytesIndexFieldData distinctIndexFieldData;
+ 
+ 
+@@ -29,16 +29,19 @@ public class StringDistinctDateHistogramFacetExecutor extends FacetExecutor {
+     private final long interval;
+     private final DateHistogramFacet.ComparatorType comparatorType;
+     final ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> entries;
++    final CacheRecycler cacheRecycler;
+ 
+-    public StringDistinctDateHistogramFacetExecutor(LongArrayIndexFieldData keyIndexFieldData,
++    public StringDistinctDateHistogramFacetExecutor(PackedArrayIndexFieldData keyIndexFieldData,
+                                                     PagedBytesIndexFieldData distinctIndexFieldData,
+-                                                    MutableDateTime dateTime, long interval, DateHistogramFacet.ComparatorType comparatorType) {
++                                                    MutableDateTime dateTime, long interval, DateHistogramFacet.ComparatorType comparatorType,
++                                                    final CacheRecycler cacheRecycler) {
+         this.comparatorType = comparatorType;
+         this.keyIndexFieldData = keyIndexFieldData;
+         this.distinctIndexFieldData = distinctIndexFieldData;
+-        this.entries = CacheRecycler.popLongObjectMap();
++        this.entries = cacheRecycler.popLongObjectMap();
+         this.dateTime = dateTime;
+         this.interval = interval;
++        this.cacheRecycler = cacheRecycler;
+     }
+ 
+     @Override
+@@ -48,7 +51,7 @@ public class StringDistinctDateHistogramFacetExecutor extends FacetExecutor {
+ 
+     @Override
+     public InternalFacet buildFacet(String facetName) {
+-        return new StringInternalDistinctDateHistogramFacet(facetName, comparatorType, entries, true);
++        return new StringInternalDistinctDateHistogramFacet(facetName, comparatorType, entries, true, cacheRecycler);
+     }
+ 
+     /*
+diff --git a/src/main/java/crate/elasticsearch/facet/distinct/StringInternalDistinctDateHistogramFacet.java b/src/main/java/crate/elasticsearch/facet/distinct/StringInternalDistinctDateHistogramFacet.java
+index f236a27..580cc0f 100644
+--- a/src/main/java/crate/elasticsearch/facet/distinct/StringInternalDistinctDateHistogramFacet.java
++++ b/src/main/java/crate/elasticsearch/facet/distinct/StringInternalDistinctDateHistogramFacet.java
+@@ -12,6 +12,7 @@ import java.io.IOException;
+ import java.util.ArrayList;
+ import java.util.HashSet;
+ import java.util.Set;
++import org.elasticsearch.cache.recycler.CacheRecycler;
+ 
+ /*
+  *
+@@ -25,12 +26,12 @@ public class StringInternalDistinctDateHistogramFacet extends InternalDistinctDa
+         InternalFacet.Streams.registerStream(STREAM, STREAM_TYPE);
+     }
+ 
+-    StringInternalDistinctDateHistogramFacet(String name) {
+-        super(name);
++    StringInternalDistinctDateHistogramFacet(String name, final CacheRecycler cacheRecycler) {
++        super(name, cacheRecycler);
+     }
+ 
+-    public StringInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<DistinctEntry> entries, boolean cachedEntries) {
+-        super(name);
++    public StringInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<DistinctEntry> entries, boolean cachedEntries, final CacheRecycler cacheRecycler) {
++        super(name, cacheRecycler);
+         this.comparatorType = comparatorType;
+         this.tEntries = entries;
+         this.cachedEntries = cachedEntries;
+@@ -39,7 +40,7 @@ public class StringInternalDistinctDateHistogramFacet extends InternalDistinctDa
+ 
+     @Override
+     protected InternalDistinctDateHistogramFacet newFacet() {
+-        return new StringInternalDistinctDateHistogramFacet(getName());
++        return new StringInternalDistinctDateHistogramFacet(getName(),cacheRecycler);
+     }
+ 
+     static InternalFacet.Stream STREAM = new Stream() {
+diff --git a/src/main/java/crate/elasticsearch/facet/latest/InternalLatestFacet.java b/src/main/java/crate/elasticsearch/facet/latest/InternalLatestFacet.java
+index 145e8f5..a854511 100644
+--- a/src/main/java/crate/elasticsearch/facet/latest/InternalLatestFacet.java
++++ b/src/main/java/crate/elasticsearch/facet/latest/InternalLatestFacet.java
+@@ -36,7 +36,8 @@ public class InternalLatestFacet extends InternalFacet {
+     }
+ 
+     @Override
+-    public Facet reduce(List<Facet> facets) {
++    public Facet reduce(ReduceContext context) { 
++        List<Facet> facets = context.facets();
+         InternalLatestFacet first = (InternalLatestFacet) facets.get(0);
+         return first.reduce(name, facets);
+     }
+diff --git a/src/main/java/crate/elasticsearch/facet/latest/LatestFacetExecutor.java b/src/main/java/crate/elasticsearch/facet/latest/LatestFacetExecutor.java
+index a8258e7..3fe9970 100644
+--- a/src/main/java/crate/elasticsearch/facet/latest/LatestFacetExecutor.java
++++ b/src/main/java/crate/elasticsearch/facet/latest/LatestFacetExecutor.java
+@@ -1,7 +1,7 @@
+ package crate.elasticsearch.facet.latest;
+ 
+ import org.apache.lucene.index.AtomicReaderContext;
+-import org.elasticsearch.common.CacheRecycler;
++import org.elasticsearch.cache.recycler.CacheRecycler;
+ import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
+ import org.elasticsearch.index.fielddata.FieldDataType;
+ import org.elasticsearch.index.fielddata.IndexNumericFieldData;
+@@ -27,7 +27,7 @@ public class LatestFacetExecutor extends FacetExecutor {
+     protected int start = 0;
+ 
+     public LatestFacetExecutor(IndexNumericFieldData keyField, IndexNumericFieldData valueField,
+-                               IndexNumericFieldData tsField, int size, int start) {
++                               IndexNumericFieldData tsField, int size, int start, CacheRecycler cacheRecycler) {
+         super();
+         this.size = size;
+         this.start = start;
+@@ -35,8 +35,8 @@ public class LatestFacetExecutor extends FacetExecutor {
+         this.keyFieldName = keyField;
+         this.valueFieldName = valueField;
+         this.tsFieldName = tsField;
+-
+-        this.aggregator = new Aggregator();
++        final ExtTLongObjectHashMap<InternalLatestFacet.Entry> entries = cacheRecycler.popLongObjectMap();
++        this.aggregator = new Aggregator(entries);
+     }
+ 
+     @Override
+@@ -77,11 +77,13 @@ public class LatestFacetExecutor extends FacetExecutor {
+ 
+     public static class Aggregator extends LongFacetAggregatorBase {
+ 
+-        final ExtTLongObjectHashMap<InternalLatestFacet.Entry> entries = CacheRecycler
+-                .popLongObjectMap();
++        final ExtTLongObjectHashMap<InternalLatestFacet.Entry> entries;
+ 
+         LongValues valueValues;
+         LongValues tsValues;
++        public Aggregator(ExtTLongObjectHashMap<InternalLatestFacet.Entry> entries){
++            this.entries = entries;
++        }
+ 
+         @Override
+         public void onValue(int docId, long key) {
+diff --git a/src/main/java/crate/elasticsearch/facet/latest/LatestFacetParser.java b/src/main/java/crate/elasticsearch/facet/latest/LatestFacetParser.java
+index 333038d..0abb2d0 100644
+--- a/src/main/java/crate/elasticsearch/facet/latest/LatestFacetParser.java
++++ b/src/main/java/crate/elasticsearch/facet/latest/LatestFacetParser.java
+@@ -87,7 +87,7 @@ public class LatestFacetParser extends AbstractComponent implements FacetParser
+             IndexNumericFieldData keyFieldData = context.fieldData().getForField(keyFieldMapper);
+             IndexNumericFieldData tsFieldData = context.fieldData().getForField(tsFieldMapper);
+ 
+-            return new LatestFacetExecutor(keyFieldData, valueFieldData, tsFieldData, size, start);
++            return new LatestFacetExecutor(keyFieldData, valueFieldData, tsFieldData, size, start,context.cacheRecycler());
+         } else {
+             throw new FacetPhaseExecutionException(facetName, "value field  is not of type int or long");
+         }
