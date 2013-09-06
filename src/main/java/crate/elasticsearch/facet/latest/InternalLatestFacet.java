@@ -36,7 +36,8 @@ public class InternalLatestFacet extends InternalFacet {
     }
 
     @Override
-    public Facet reduce(List<Facet> facets) {
+    public Facet reduce(ReduceContext context) { 
+        List<Facet> facets = context.facets();
         InternalLatestFacet first = (InternalLatestFacet) facets.get(0);
         return first.reduce(name, facets);
     }

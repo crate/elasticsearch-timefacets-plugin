@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import org.elasticsearch.cache.recycler.CacheRecycler;
 
 /*
  *
@@ -25,12 +26,12 @@ public class StringInternalDistinctDateHistogramFacet extends InternalDistinctDa
         InternalFacet.Streams.registerStream(STREAM, STREAM_TYPE);
     }
 
-    StringInternalDistinctDateHistogramFacet(String name) {
-        super(name);
+    StringInternalDistinctDateHistogramFacet(String name, final CacheRecycler cacheRecycler) {
+        super(name, cacheRecycler);
     }
 
-    public StringInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<DistinctEntry> entries, boolean cachedEntries) {
-        super(name);
+    public StringInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<DistinctEntry> entries, boolean cachedEntries, final CacheRecycler cacheRecycler) {
+        super(name, cacheRecycler);
         this.comparatorType = comparatorType;
         this.tEntries = entries;
         this.cachedEntries = cachedEntries;
@@ -39,7 +40,7 @@ public class StringInternalDistinctDateHistogramFacet extends InternalDistinctDa
 
     @Override
     protected InternalDistinctDateHistogramFacet newFacet() {
-        return new StringInternalDistinctDateHistogramFacet(getName());
+        return new StringInternalDistinctDateHistogramFacet(getName(),cacheRecycler);
     }
 
     static InternalFacet.Stream STREAM = new Stream() {

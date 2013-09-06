@@ -1,6 +1,6 @@
 package crate.elasticsearch.facet.distinct;
 
-import org.elasticsearch.common.CacheRecycler;
+import org.elasticsearch.cache.recycler.CacheRecycler;
 import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilderString;
@@ -20,12 +20,15 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
     ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> tEntries;
     boolean cachedEntries;
     Collection<DistinctEntry> entries = null;
+    protected final CacheRecycler cacheRecycler;
 
     public InternalDistinctDateHistogramFacet() {
+        cacheRecycler = null;
     }
 
-    public InternalDistinctDateHistogramFacet(String facetName) {
+    public InternalDistinctDateHistogramFacet(String facetName,final CacheRecycler cacheRecycler) {
         super(facetName);
+        this.cacheRecycler = cacheRecycler;
     }
 
     public static void registerStreams() {
@@ -102,7 +105,7 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
 
     void releaseCache() {
         if (cachedEntries) {
-            CacheRecycler.pushLongObjectMap(tEntries);
+            cacheRecycler.pushLongObjectMap(tEntries);
             cachedEntries = false;
             tEntries = null;
         }
@@ -117,7 +120,9 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
         static final XContentBuilderString TOTAL_COUNT = new XContentBuilderString("count");
     }
 
-    public Facet reduce(List<Facet> facets) {
+    @Override
+    public Facet reduce(ReduceContext context) { 
+        List<Facet> facets = context.facets();
         if (facets.size() == 1) {
             // we need to sort it
             InternalDistinctDateHistogramFacet internalFacet = (InternalDistinctDateHistogramFacet) facets.get(0);
@@ -127,7 +132,7 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
             return internalFacet;
         }
 
-        ExtTLongObjectHashMap<DistinctEntry> map = CacheRecycler.popLongObjectMap();
+        ExtTLongObjectHashMap<DistinctEntry> map = context.cacheRecycler().popLongObjectMap();
         for (Facet facet : facets) {
             InternalDistinctDateHistogramFacet histoFacet = (InternalDistinctDateHistogramFacet) facet;
             for (DistinctEntry fullEntry : histoFacet.entries) {
@@ -154,7 +159,7 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
             ordered.add(value);
         }
 
-        CacheRecycler.pushLongObjectMap(map);
+        context.cacheRecycler().pushLongObjectMap(map);
 
         // just initialize it as already ordered facet
         InternalDistinctDateHistogramFacet ret = newFacet();

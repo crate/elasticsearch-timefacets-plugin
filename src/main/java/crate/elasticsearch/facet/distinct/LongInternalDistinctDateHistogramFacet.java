@@ -9,6 +9,7 @@ import org.elasticsearch.search.facet.Facet;
 
 import java.io.IOException;
 import java.util.*;
+import org.elasticsearch.cache.recycler.CacheRecycler;
 
 public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDateHistogramFacet {
 
@@ -21,12 +22,12 @@ public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDate
     LongInternalDistinctDateHistogramFacet() {
     }
 
-    LongInternalDistinctDateHistogramFacet(String name) {
-        super(name);
+    LongInternalDistinctDateHistogramFacet(String name, final CacheRecycler cacheRecycler) {
+        super(name, cacheRecycler);
     }
 
-    public LongInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<DistinctEntry> entries, boolean cachedEntries) {
-        super(name);
+    public LongInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<DistinctEntry> entries, boolean cachedEntries,final CacheRecycler cacheRecycler) {
+        super(name, cacheRecycler);
         this.comparatorType = comparatorType;
         this.tEntries = entries;
         this.cachedEntries = cachedEntries;
@@ -53,7 +54,7 @@ public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDate
 
     @Override
     protected  LongInternalDistinctDateHistogramFacet newFacet() {
-        return new LongInternalDistinctDateHistogramFacet(getName());
+        return new LongInternalDistinctDateHistogramFacet(getName(), cacheRecycler);
     }
 
     /**

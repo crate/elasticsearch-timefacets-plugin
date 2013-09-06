@@ -14,7 +14,7 @@ import org.elasticsearch.common.trove.map.hash.TObjectIntHashMap;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.fielddata.IndexNumericFieldData;
-import org.elasticsearch.index.fielddata.plain.LongArrayIndexFieldData;
+import org.elasticsearch.index.fielddata.plain.PackedArrayIndexFieldData;
 import org.elasticsearch.index.fielddata.plain.PagedBytesIndexFieldData;
 import org.elasticsearch.index.mapper.FieldMapper;
 import org.elasticsearch.search.facet.FacetExecutor;
@@ -201,12 +201,12 @@ public class DistinctDateHistogramFacetParser extends AbstractComponent implemen
 
         if (distinctFieldMapper.fieldDataType().getType().equals("string")) {
             PagedBytesIndexFieldData distinctFieldData = context.fieldData().getForField(distinctFieldMapper);
-            LongArrayIndexFieldData keyIndexFieldData = context.fieldData().getForField(keyMapper);
-            return new StringDistinctDateHistogramFacetExecutor(keyIndexFieldData, distinctFieldData, dateTime, interval, comparatorType);
+            PackedArrayIndexFieldData keyIndexFieldData = context.fieldData().getForField(keyMapper);
+            return new StringDistinctDateHistogramFacetExecutor(keyIndexFieldData, distinctFieldData, dateTime, interval, comparatorType, context.cacheRecycler());
         } else if (distinctFieldMapper.fieldDataType().getType().equals("long"))  {
             IndexNumericFieldData distinctFieldData = context.fieldData().getForField(distinctFieldMapper);
             IndexNumericFieldData keyIndexFieldData = context.fieldData().getForField(keyMapper);
-            return new LongDistinctDateHistogramFacetExecutor(keyIndexFieldData, distinctFieldData, dateTime, interval, comparatorType);
+            return new LongDistinctDateHistogramFacetExecutor(keyIndexFieldData, distinctFieldData, dateTime, interval, comparatorType, context.cacheRecycler());
         } else {
             throw new FacetPhaseExecutionException(facetName, "distinct field [" + distinctField + "] is not of type string or long");
         }

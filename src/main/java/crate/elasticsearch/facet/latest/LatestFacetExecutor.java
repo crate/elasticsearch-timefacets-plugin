@@ -1,7 +1,7 @@
 package crate.elasticsearch.facet.latest;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.elasticsearch.common.CacheRecycler;
+import org.elasticsearch.cache.recycler.CacheRecycler;
 import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.index.fielddata.FieldDataType;
 import org.elasticsearch.index.fielddata.IndexNumericFieldData;
@@ -27,7 +27,7 @@ public class LatestFacetExecutor extends FacetExecutor {
     protected int start = 0;
 
     public LatestFacetExecutor(IndexNumericFieldData keyField, IndexNumericFieldData valueField,
-                               IndexNumericFieldData tsField, int size, int start) {
+                               IndexNumericFieldData tsField, int size, int start, CacheRecycler cacheRecycler) {
         super();
         this.size = size;
         this.start = start;
@@ -35,8 +35,8 @@ public class LatestFacetExecutor extends FacetExecutor {
         this.keyFieldName = keyField;
         this.valueFieldName = valueField;
         this.tsFieldName = tsField;
-
-        this.aggregator = new Aggregator();
+        final ExtTLongObjectHashMap<InternalLatestFacet.Entry> entries = cacheRecycler.popLongObjectMap();
+        this.aggregator = new Aggregator(entries);
     }
 
     @Override
@@ -77,11 +77,13 @@ public class LatestFacetExecutor extends FacetExecutor {
 
     public static class Aggregator extends LongFacetAggregatorBase {
 
-        final ExtTLongObjectHashMap<InternalLatestFacet.Entry> entries = CacheRecycler
-                .popLongObjectMap();
+        final ExtTLongObjectHashMap<InternalLatestFacet.Entry> entries;
 
         LongValues valueValues;
         LongValues tsValues;
+        public Aggregator(ExtTLongObjectHashMap<InternalLatestFacet.Entry> entries){
+            this.entries = entries;
+        }
 
         @Override
         public void onValue(int docId, long key) {

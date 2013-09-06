@@ -1,7 +1,7 @@
 package crate.elasticsearch.facet.distinct;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.elasticsearch.common.CacheRecycler;
+import org.elasticsearch.cache.recycler.CacheRecycler;
 import org.elasticsearch.common.joda.time.MutableDateTime;
 import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.index.fielddata.IndexNumericFieldData;
@@ -26,16 +26,19 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
     private final long interval;
     private final DateHistogramFacet.ComparatorType comparatorType;
     final ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> entries;
+    private final CacheRecycler cacheRecycler;
 
     public LongDistinctDateHistogramFacetExecutor(IndexNumericFieldData keyIndexFieldData,
                                                   IndexNumericFieldData distinctIndexFieldData,
-                                                  MutableDateTime dateTime, long interval, DateHistogramFacet.ComparatorType comparatorType) {
+                                                  MutableDateTime dateTime, long interval, DateHistogramFacet.ComparatorType comparatorType,
+                                                  final CacheRecycler cacheRecycler) {
         this.comparatorType = comparatorType;
         this.keyIndexFieldData = keyIndexFieldData;
         this.distinctIndexFieldData = distinctIndexFieldData;
-        this.entries = CacheRecycler.popLongObjectMap();
+        this.entries = cacheRecycler.popLongObjectMap();
         this.dateTime = dateTime;
         this.interval = interval;
+        this.cacheRecycler = cacheRecycler;
     }
 
     @Override
@@ -45,7 +48,7 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
 
     @Override
     public InternalFacet buildFacet(String facetName) {
-        return new LongInternalDistinctDateHistogramFacet(facetName, comparatorType, entries, true);
+        return new LongInternalDistinctDateHistogramFacet(facetName, comparatorType, entries, true, cacheRecycler);
     }
 
     /*
