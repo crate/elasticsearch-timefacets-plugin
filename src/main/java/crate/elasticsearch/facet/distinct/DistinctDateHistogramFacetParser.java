@@ -24,7 +24,7 @@ import org.elasticsearch.search.facet.datehistogram.DateHistogramFacet;
 import org.elasticsearch.search.internal.SearchContext;
 
 import java.io.IOException;
-
+import org.elasticsearch.common.joda.Joda;
 /**
  * Parser is responsible to make sense of a SearchRequests "facet query" and
  * has to choose the correct FacetExecutor based on the facet query
@@ -43,6 +43,7 @@ public class DistinctDateHistogramFacetParser extends AbstractComponent implemen
         dateFieldParsers = MapBuilder.<String, DateFieldParser>newMapBuilder()
                 .put("year", new DateFieldParser.YearOfCentury())
                 .put("1y", new DateFieldParser.YearOfCentury())
+                .put("quarter", new DateFieldParser.Quarter())
                 .put("month", new DateFieldParser.MonthOfYear())
                 .put("1m", new DateFieldParser.MonthOfYear())
                 .put("week", new DateFieldParser.WeekOfWeekyear())
@@ -229,6 +230,13 @@ public class DistinctDateHistogramFacetParser extends AbstractComponent implemen
             @Override
             public DateTimeField parse(Chronology chronology) {
                 return chronology.yearOfCentury();
+            }
+        }
+        
+        static class Quarter implements DateFieldParser {
+            @Override
+            public DateTimeField parse(Chronology chronology) {
+                return Joda.QuarterOfYear.getField(chronology);
             }
         }
 
