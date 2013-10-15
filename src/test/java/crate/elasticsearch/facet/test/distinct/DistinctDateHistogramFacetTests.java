@@ -79,7 +79,7 @@ public class DistinctDateHistogramFacetTests extends AbstractNodes {
     }
 
     public void flush() {
-        client.admin().indices().prepareFlush().setRefresh(true).execute().actionGet();
+        client.admin().indices().prepareFlush().execute().actionGet();
         client.admin().indices().prepareRefresh().execute().actionGet();
         try {
             Thread.sleep(300); // sleep a bit here...

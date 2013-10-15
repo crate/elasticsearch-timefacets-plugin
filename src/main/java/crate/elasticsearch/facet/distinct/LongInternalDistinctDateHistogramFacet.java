@@ -22,16 +22,14 @@ public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDate
     LongInternalDistinctDateHistogramFacet() {
     }
 
-    LongInternalDistinctDateHistogramFacet(String name, final CacheRecycler cacheRecycler) {
-        super(name, cacheRecycler);
+    LongInternalDistinctDateHistogramFacet(String name) {
+        super(name);
     }
 
-    public LongInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<DistinctEntry> entries, boolean cachedEntries,final CacheRecycler cacheRecycler) {
-        super(name, cacheRecycler);
+    public LongInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, List<DistinctEntry> entries) {
+        super(name);
         this.comparatorType = comparatorType;
-        this.tEntries = entries;
-        this.cachedEntries = cachedEntries;
-        this.entries = entries.valueCollection();
+        this.entries = entries;
     }
 
     static Stream STREAM = new Stream() {
@@ -54,7 +52,7 @@ public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDate
 
     @Override
     protected  LongInternalDistinctDateHistogramFacet newFacet() {
-        return new LongInternalDistinctDateHistogramFacet(getName(), cacheRecycler);
+        return new LongInternalDistinctDateHistogramFacet(getName());
     }
 
     /**
@@ -65,7 +63,6 @@ public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDate
         super.readFrom(in);
         comparatorType = ComparatorType.fromId(in.readByte());
 
-        cachedEntries = false;
         int size = in.readVInt();
         entries = new ArrayList<DistinctEntry>(size);
         for (int i = 0; i < size; i++) {
@@ -95,6 +92,5 @@ public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDate
                 out.writeLong((Long) name);
             }
         }
-        releaseCache();
     }
 }
