@@ -71,7 +71,7 @@ public class LatestFacetTests extends AbstractNodes {
     }
 
     public void flush() {
-        client.admin().indices().prepareFlush().setRefresh(true).execute()
+        client.admin().indices().prepareFlush().execute()
                 .actionGet();
         client.admin().indices().prepareRefresh().execute().actionGet();
     }
