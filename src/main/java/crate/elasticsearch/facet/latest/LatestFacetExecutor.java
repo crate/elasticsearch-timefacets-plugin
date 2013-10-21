@@ -2,6 +2,7 @@ package crate.elasticsearch.facet.latest;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.elasticsearch.cache.recycler.CacheRecycler;
+import org.elasticsearch.common.recycler.Recycler;
 import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.index.fielddata.FieldDataType;
 import org.elasticsearch.index.fielddata.IndexNumericFieldData;
@@ -26,6 +27,8 @@ public class LatestFacetExecutor extends FacetExecutor {
     protected int size = 10;
     protected int start = 0;
 
+    final Recycler.V<ExtTLongObjectHashMap<InternalLatestFacet.Entry>> entries;
+
     public LatestFacetExecutor(IndexNumericFieldData keyField, IndexNumericFieldData valueField,
                                IndexNumericFieldData tsField, int size, int start, CacheRecycler cacheRecycler) {
         super();
@@ -35,8 +38,8 @@ public class LatestFacetExecutor extends FacetExecutor {
         this.keyFieldName = keyField;
         this.valueFieldName = valueField;
         this.tsFieldName = tsField;
-        final ExtTLongObjectHashMap<InternalLatestFacet.Entry> entries = cacheRecycler.popLongObjectMap();
-        this.aggregator = new Aggregator(entries);
+        entries = cacheRecycler.longObjectMap(-1);
+        this.aggregator = new Aggregator(entries.v());
     }
 
     @Override
