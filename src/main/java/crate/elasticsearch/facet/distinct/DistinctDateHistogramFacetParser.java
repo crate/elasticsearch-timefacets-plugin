@@ -3,14 +3,13 @@ package crate.elasticsearch.facet.distinct;
 import org.elasticsearch.common.collect.ImmutableMap;
 import org.elasticsearch.common.collect.MapBuilder;
 import org.elasticsearch.common.component.AbstractComponent;
+import org.elasticsearch.common.hppc.ObjectIntOpenHashMap;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.joda.time.Chronology;
 import org.elasticsearch.common.joda.time.DateTimeField;
 import org.elasticsearch.common.joda.time.DateTimeZone;
 import org.elasticsearch.common.joda.time.MutableDateTime;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.trove.impl.Constants;
-import org.elasticsearch.common.trove.map.hash.TObjectIntHashMap;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.fielddata.IndexNumericFieldData;
@@ -34,7 +33,7 @@ import java.io.IOException;
 public class DistinctDateHistogramFacetParser extends AbstractComponent implements FacetParser {
 
     private final ImmutableMap<String, DateFieldParser> dateFieldParsers;
-    private final TObjectIntHashMap<String> rounding = new TObjectIntHashMap<String>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
+    private final ObjectIntOpenHashMap<String> rounding = new ObjectIntOpenHashMap<String>();
 
     @Inject
     public DistinctDateHistogramFacetParser(Settings settings) {

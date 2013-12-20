@@ -2,9 +2,9 @@ package crate.elasticsearch.facet.distinct;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.elasticsearch.cache.recycler.CacheRecycler;
+import org.elasticsearch.common.hppc.LongObjectOpenHashMap;
 import org.elasticsearch.common.joda.time.MutableDateTime;
 import org.elasticsearch.common.recycler.Recycler;
-import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.index.fielddata.IndexNumericFieldData;
 import org.elasticsearch.index.fielddata.LongValues;
 import org.elasticsearch.search.facet.FacetExecutor;
@@ -14,6 +14,7 @@ import org.elasticsearch.search.facet.datehistogram.DateHistogramFacet;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * Collect the distinct values per time interval.
@@ -27,7 +28,7 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
     private MutableDateTime dateTime;
     private final long interval;
     private final DateHistogramFacet.ComparatorType comparatorType;
-    final Recycler.V<ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry>> entries;
+    final Recycler.V<LongObjectOpenHashMap<InternalDistinctDateHistogramFacet.DistinctEntry>> entries;
     private final CacheRecycler cacheRecycler;
 
     public LongDistinctDateHistogramFacetExecutor(IndexNumericFieldData keyIndexFieldData,
@@ -50,7 +51,7 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
 
     @Override
     public InternalFacet buildFacet(String facetName) {
-        ArrayList<LongInternalDistinctDateHistogramFacet.DistinctEntry> entries1 = new ArrayList<LongInternalDistinctDateHistogramFacet.DistinctEntry>(entries.v().valueCollection());
+        ArrayList<LongInternalDistinctDateHistogramFacet.DistinctEntry> entries1 = new ArrayList<LongInternalDistinctDateHistogramFacet.DistinctEntry>(Arrays.asList(entries.v().values));
 
         entries.release();
         return new LongInternalDistinctDateHistogramFacet(facetName, comparatorType, entries1);
@@ -100,11 +101,11 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
         LongValues valueValues;
         private final long interval;
         private MutableDateTime dateTime;
-        final ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> entries;
+        final LongObjectOpenHashMap<InternalDistinctDateHistogramFacet.DistinctEntry> entries;
 
         final ValueAggregator valueAggregator = new ValueAggregator();
 
-        public DateHistogramProc(ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry>  entries, MutableDateTime dateTime, long interval) {
+        public DateHistogramProc(LongObjectOpenHashMap<InternalDistinctDateHistogramFacet.DistinctEntry>  entries, MutableDateTime dateTime, long interval) {
             this.dateTime = dateTime;
             this.entries = entries;
             this.interval = interval;
@@ -116,11 +117,11 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
          */
         @Override
         public void onDoc(int docId, LongValues values) {
-            if (values.hasValue(docId)) {
-                final LongValues.Iter iter = values.getIter(docId);
-                while (iter.hasNext()) {
-                    dateTime.setMillis(iter.next());
-                    //dateTime = new MutableDateTime(iter.next());
+
+            int totalDocumentEntries= values.setDocument(docId);
+            if (totalDocumentEntries > 0) {
+                for(Integer i = 0 ; i < totalDocumentEntries ; i++) {
+                    dateTime.setMillis(values.nextValue());
                     onValue(docId, dateTime);
                     total++;
                 }
