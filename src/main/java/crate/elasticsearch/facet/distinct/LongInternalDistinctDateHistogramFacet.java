@@ -9,6 +9,7 @@ import org.elasticsearch.search.facet.Facet;
 
 import java.io.IOException;
 import java.util.*;
+import org.elasticsearch.cache.recycler.CacheRecycler;
 
 public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDateHistogramFacet {
 
@@ -25,12 +26,10 @@ public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDate
         super(name);
     }
 
-    public LongInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<DistinctEntry> entries, boolean cachedEntries) {
+    public LongInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, List<DistinctEntry> entries) {
         super(name);
         this.comparatorType = comparatorType;
-        this.tEntries = entries;
-        this.cachedEntries = cachedEntries;
-        this.entries = entries.valueCollection();
+        this.entries = entries;
     }
 
     static Stream STREAM = new Stream() {
@@ -64,7 +63,6 @@ public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDate
         super.readFrom(in);
         comparatorType = ComparatorType.fromId(in.readByte());
 
-        cachedEntries = false;
         int size = in.readVInt();
         entries = new ArrayList<DistinctEntry>(size);
         for (int i = 0; i < size; i++) {
@@ -94,6 +92,5 @@ public class LongInternalDistinctDateHistogramFacet extends InternalDistinctDate
                 out.writeLong((Long) name);
             }
         }
-        releaseCache();
     }
 }

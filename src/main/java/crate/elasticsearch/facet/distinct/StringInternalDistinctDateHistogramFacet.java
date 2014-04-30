@@ -4,6 +4,7 @@ import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.bytes.HashedBytesArray;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
+import org.elasticsearch.common.recycler.Recycler;
 import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.search.facet.Facet;
 import org.elasticsearch.search.facet.InternalFacet;
@@ -12,6 +13,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.List;
+import org.elasticsearch.cache.recycler.CacheRecycler;
 
 /*
  *
@@ -29,12 +32,10 @@ public class StringInternalDistinctDateHistogramFacet extends InternalDistinctDa
         super(name);
     }
 
-    public StringInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<DistinctEntry> entries, boolean cachedEntries) {
+    public StringInternalDistinctDateHistogramFacet(String name, ComparatorType comparatorType, List<DistinctEntry> entries) {
         super(name);
         this.comparatorType = comparatorType;
-        this.tEntries = entries;
-        this.cachedEntries = cachedEntries;
-        this.entries = entries.valueCollection();
+        this.entries = entries;
     }
 
     @Override
@@ -70,7 +71,6 @@ public class StringInternalDistinctDateHistogramFacet extends InternalDistinctDa
     @Override public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
         comparatorType = ComparatorType.fromId(in.readByte());
-        cachedEntries = false;
         int size = in.readVInt();
         entries = new ArrayList<DistinctEntry>(size);
         for (int i = 0; i < size; i++) {
@@ -98,6 +98,5 @@ public class StringInternalDistinctDateHistogramFacet extends InternalDistinctDa
                 out.writeString((String) name);
             }
         }
-        releaseCache();
     }
 }

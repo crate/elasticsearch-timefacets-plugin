@@ -87,7 +87,7 @@ public class LatestFacetParser extends AbstractComponent implements FacetParser 
             IndexNumericFieldData keyFieldData = context.fieldData().getForField(keyFieldMapper);
             IndexNumericFieldData tsFieldData = context.fieldData().getForField(tsFieldMapper);
 
-            return new LatestFacetExecutor(keyFieldData, valueFieldData, tsFieldData, size, start);
+            return new LatestFacetExecutor(keyFieldData, valueFieldData, tsFieldData, size, start,context.cacheRecycler());
         } else {
             throw new FacetPhaseExecutionException(facetName, "value field  is not of type int or long");
         }
