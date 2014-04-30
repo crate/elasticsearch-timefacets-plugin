@@ -9,8 +9,7 @@ import org.elasticsearch.common.joda.time.DateTimeField;
 import org.elasticsearch.common.joda.time.DateTimeZone;
 import org.elasticsearch.common.joda.time.MutableDateTime;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.trove.impl.Constants;
-import org.elasticsearch.common.trove.map.hash.TObjectIntHashMap;
+import com.carrotsearch.hppc.ObjectIntOpenHashMap;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.fielddata.IndexNumericFieldData;
@@ -34,7 +33,7 @@ import org.elasticsearch.common.joda.Joda;
 public class DistinctDateHistogramFacetParser extends AbstractComponent implements FacetParser {
 
     private final ImmutableMap<String, DateFieldParser> dateFieldParsers;
-    private final TObjectIntHashMap<String> rounding = new TObjectIntHashMap<String>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
+    private final ObjectIntOpenHashMap<String> rounding = new ObjectIntOpenHashMap<String>();
 
     @Inject
     public DistinctDateHistogramFacetParser(Settings settings) {

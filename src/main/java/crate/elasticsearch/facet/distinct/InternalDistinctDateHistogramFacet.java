@@ -2,14 +2,22 @@ package crate.elasticsearch.facet.distinct;
 
 import org.elasticsearch.cache.recycler.CacheRecycler;
 import org.elasticsearch.common.recycler.Recycler;
-import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilderString;
 import org.elasticsearch.search.facet.Facet;
 import org.elasticsearch.search.facet.datehistogram.InternalDateHistogramFacet;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.Comparator;
+import java.util.Arrays;
+import org.elasticsearch.common.hppc.LongObjectOpenHashMap;
 
 /**
  */
@@ -118,7 +126,7 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
             return internalFacet;
         }
 
-        Recycler.V<ExtTLongObjectHashMap<DistinctEntry>> map = context.cacheRecycler().longObjectMap(-1);
+        Recycler.V<LongObjectOpenHashMap<DistinctEntry>> map = context.cacheRecycler().longObjectMap(-1);
         for (Facet facet : facets) {
             InternalDistinctDateHistogramFacet histoFacet = (InternalDistinctDateHistogramFacet) facet;
             for (DistinctEntry fullEntry : histoFacet.entries) {
@@ -133,7 +141,7 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
         }
 
         // sort
-        Object[] values = map.v().internalValues();
+        Object[] values = map.v().values().toArray();
         Arrays.sort(values, (Comparator) comparatorType.comparator());
         List<DistinctEntry> ordered = new ArrayList<DistinctEntry>(map.v().size());
         for (int i = 0; i < map.v().size(); i++) {

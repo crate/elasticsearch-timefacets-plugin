@@ -3,7 +3,6 @@ package crate.elasticsearch.facet.latest;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.elasticsearch.cache.recycler.CacheRecycler;
 import org.elasticsearch.common.recycler.Recycler;
-import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.index.fielddata.FieldDataType;
 import org.elasticsearch.index.fielddata.IndexNumericFieldData;
 import org.elasticsearch.index.fielddata.LongValues;
@@ -12,6 +11,7 @@ import org.elasticsearch.search.facet.InternalFacet;
 import org.elasticsearch.search.facet.LongFacetAggregatorBase;
 
 import java.io.IOException;
+import org.elasticsearch.common.hppc.LongObjectOpenHashMap;
 
 public class LatestFacetExecutor extends FacetExecutor {
 
@@ -27,7 +27,7 @@ public class LatestFacetExecutor extends FacetExecutor {
     protected int size = 10;
     protected int start = 0;
 
-    final Recycler.V<ExtTLongObjectHashMap<InternalLatestFacet.Entry>> entries;
+    final Recycler.V<LongObjectOpenHashMap<InternalLatestFacet.Entry>> entries;
 
     public LatestFacetExecutor(IndexNumericFieldData keyField, IndexNumericFieldData valueField,
                                IndexNumericFieldData tsField, int size, int start, CacheRecycler cacheRecycler) {
@@ -80,26 +80,32 @@ public class LatestFacetExecutor extends FacetExecutor {
 
     public static class Aggregator extends LongFacetAggregatorBase {
 
-        final ExtTLongObjectHashMap<InternalLatestFacet.Entry> entries;
+        final LongObjectOpenHashMap<InternalLatestFacet.Entry> entries;
 
         LongValues valueValues;
         LongValues tsValues;
-        public Aggregator(ExtTLongObjectHashMap<InternalLatestFacet.Entry> entries){
+        public Aggregator(LongObjectOpenHashMap<InternalLatestFacet.Entry> entries){
             this.entries = entries;
         }
 
         @Override
         public void onValue(int docId, long key) {
             InternalLatestFacet.Entry entry = entries.get(key);
-            long ts = tsValues.getValue(docId);
-            if (entry == null || entry.ts < ts) {
-                int value = (int)valueValues.getValue(docId);
-                if (entry == null) {
-                    entry = new InternalLatestFacet.Entry(ts, value);
-                    entries.put(key, entry);
-                } else {
-                    entry.ts = ts;
-                    entry.value = value;
+            int size = tsValues.setDocument(docId);
+            if(size > 0){
+                long ts = tsValues.nextValue();
+                if (entry == null || entry.ts < ts) {
+                    size = valueValues.setDocument(docId);
+                    if(size > 0){
+                        int value = (int)valueValues.nextValue();
+                        if (entry == null) {
+                            entry = new InternalLatestFacet.Entry(ts, value);
+                            entries.put(key, entry);
+                        } else {
+                            entry.ts = ts;
+                            entry.value = value;
+                        }
+                    }
                 }
             }
         }

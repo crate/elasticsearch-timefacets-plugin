@@ -5,8 +5,6 @@ import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.bytes.HashedBytesArray;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
-import org.elasticsearch.common.trove.map.TLongObjectMap;
-import org.elasticsearch.common.trove.procedure.TLongObjectProcedure;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilderString;
 import org.elasticsearch.search.facet.Facet;
@@ -14,6 +12,8 @@ import org.elasticsearch.search.facet.InternalFacet;
 
 import java.io.IOException;
 import java.util.List;
+import org.elasticsearch.common.hppc.LongObjectOpenHashMap;
+import org.elasticsearch.common.hppc.procedures.LongObjectProcedure;
 
 /**
  * Collapses matching documents to ``key_field`` and uses only
@@ -89,17 +89,17 @@ public class InternalLatestFacet extends InternalFacet {
         }
     }
 
-    public void insert(TLongObjectMap<InternalLatestFacet.Entry> entries) {
+    public void insert(LongObjectOpenHashMap<InternalLatestFacet.Entry> entries) {
         if (queue == null) {
             this.queue = new EntryPriorityQueue(start + size);
         }
-        entries.forEachEntry(new TLongObjectProcedure<Entry>() {
-            @Override
-            public boolean execute(long key, Entry entry) {
-                entry.key = key;
-                queue.insertWithOverflow(entry);
-                return true;
-            }
+        entries.forEach(new LongObjectProcedure<Entry>() {
+
+          @Override
+          public void apply(long key, Entry entry) {
+            entry.key = key;
+            queue.insertWithOverflow(entry);
+          }
         });
     }
 
