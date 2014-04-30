@@ -2,11 +2,6 @@
 Elasticsearch Plugins
 =====================
 
-.. note::
-
-  This project is not maintained anymore and is now superseded by
-  crate - see https://github.com/crate/crate
-
 Distinct Date Histogram Facet
 =============================
 
