@@ -10,9 +10,11 @@ import org.elasticsearch.search.facet.FacetExecutor;
 import org.elasticsearch.search.facet.InternalFacet;
 import org.elasticsearch.search.facet.LongFacetAggregatorBase;
 import org.elasticsearch.search.facet.datehistogram.DateHistogramFacet;
+import org.elasticsearch.search.internal.SearchContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
+
 import org.elasticsearch.common.hppc.LongObjectOpenHashMap;
 
 /**
@@ -28,19 +30,17 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
     private final long interval;
     private final DateHistogramFacet.ComparatorType comparatorType;
     final Recycler.V<LongObjectOpenHashMap<InternalDistinctDateHistogramFacet.DistinctEntry>> entries;
-    private final CacheRecycler cacheRecycler;
 
     public LongDistinctDateHistogramFacetExecutor(IndexNumericFieldData keyIndexFieldData,
                                                   IndexNumericFieldData distinctIndexFieldData,
                                                   MutableDateTime dateTime, long interval, DateHistogramFacet.ComparatorType comparatorType,
-                                                  final CacheRecycler cacheRecycler) {
+                                                  final SearchContext context) {
         this.comparatorType = comparatorType;
         this.keyIndexFieldData = keyIndexFieldData;
         this.distinctIndexFieldData = distinctIndexFieldData;
-        this.entries = cacheRecycler.longObjectMap(-1);
+        this.entries = context.cacheRecycler().longObjectMap(-1);
         this.dateTime = dateTime;
         this.interval = interval;
-        this.cacheRecycler = cacheRecycler;
     }
 
     @Override
