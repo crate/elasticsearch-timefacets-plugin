@@ -1,8 +1,9 @@
 package crate.elasticsearch.facet.distinct;
 
-import org.elasticsearch.cache.recycler.CacheRecycler;
+import org.elasticsearch.common.hppc.LongObjectOpenHashMap;
+import org.elasticsearch.common.logging.ESLogger;
+import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.recycler.Recycler;
-import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilderString;
 import org.elasticsearch.search.facet.Facet;
@@ -110,6 +111,7 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
     @Override
     public Facet reduce(ReduceContext context) { 
         List<Facet> facets = context.facets();
+
         if (facets.size() == 1) {
             // we need to sort it
             InternalDistinctDateHistogramFacet internalFacet = (InternalDistinctDateHistogramFacet) facets.get(0);
@@ -118,22 +120,26 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
             return internalFacet;
         }
 
-        Recycler.V<ExtTLongObjectHashMap<DistinctEntry>> map = context.cacheRecycler().longObjectMap(-1);
+        Recycler.V<LongObjectOpenHashMap<DistinctEntry>> map = context.cacheRecycler().longObjectMap(-1);
         for (Facet facet : facets) {
+
             InternalDistinctDateHistogramFacet histoFacet = (InternalDistinctDateHistogramFacet) facet;
             for (DistinctEntry fullEntry : histoFacet.entries) {
-                DistinctEntry current = map.v().get(fullEntry.getTime());
-                if (current != null) {
-                    current.getValues().addAll(fullEntry.getValues());
 
-                } else {
-                    map.v().put(fullEntry.getTime(), fullEntry);
+                if(fullEntry != null){
+                    DistinctEntry current = map.v().get(fullEntry.getTime());
+                    if (current != null) {
+                        current.getValues().addAll(fullEntry.getValues());
+                    } else {
+                        map.v().put(fullEntry.getTime(), fullEntry);
+                    }
                 }
+
             }
         }
 
         // sort
-        Object[] values = map.v().internalValues();
+        Object[] values = map.v().values;
         Arrays.sort(values, (Comparator) comparatorType.comparator());
         List<DistinctEntry> ordered = new ArrayList<DistinctEntry>(map.v().size());
         for (int i = 0; i < map.v().size(); i++) {
