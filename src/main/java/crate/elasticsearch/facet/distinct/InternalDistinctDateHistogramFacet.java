@@ -152,7 +152,7 @@ public abstract class InternalDistinctDateHistogramFacet extends InternalDateHis
             ordered.add(value);
         }
 
-        map.release();
+        map.close();
 
         // just initialize it as already ordered facet
         InternalDistinctDateHistogramFacet ret = newFacet();

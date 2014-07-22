@@ -60,7 +60,7 @@ public class LongDistinctDateHistogramFacetExecutor extends FacetExecutor {
             }
         }
 
-        entries.release();
+        entries.close();
         return new LongInternalDistinctDateHistogramFacet(facetName, comparatorType, entries1);
     }
 

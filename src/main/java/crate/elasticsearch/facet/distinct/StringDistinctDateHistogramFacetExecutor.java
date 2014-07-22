@@ -60,7 +60,7 @@ public class StringDistinctDateHistogramFacetExecutor extends FacetExecutor {
                 entries1.add(value);
             }
         }
-        entries.release();
+        entries.close();
         return new StringInternalDistinctDateHistogramFacet(facetName, comparatorType, entries1);
     }
 
