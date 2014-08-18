@@ -9,8 +9,7 @@ import org.elasticsearch.common.joda.time.DateTimeField;
 import org.elasticsearch.common.joda.time.DateTimeZone;
 import org.elasticsearch.common.joda.time.MutableDateTime;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.trove.impl.Constants;
-import org.elasticsearch.common.trove.map.hash.TObjectIntHashMap;
+import com.carrotsearch.hppc.ObjectIntOpenHashMap;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.fielddata.IndexNumericFieldData;
@@ -24,7 +23,7 @@ import org.elasticsearch.search.facet.datehistogram.DateHistogramFacet;
 import org.elasticsearch.search.internal.SearchContext;
 
 import java.io.IOException;
-
+import org.elasticsearch.common.joda.Joda;
 /**
  * Parser is responsible to make sense of a SearchRequests "facet query" and
  * has to choose the correct FacetExecutor based on the facet query
@@ -34,7 +33,7 @@ import java.io.IOException;
 public class DistinctDateHistogramFacetParser extends AbstractComponent implements FacetParser {
 
     private final ImmutableMap<String, DateFieldParser> dateFieldParsers;
-    private final TObjectIntHashMap<String> rounding = new TObjectIntHashMap<String>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
+    private final ObjectIntOpenHashMap<String> rounding = new ObjectIntOpenHashMap<String>();
 
     @Inject
     public DistinctDateHistogramFacetParser(Settings settings) {
@@ -43,6 +42,7 @@ public class DistinctDateHistogramFacetParser extends AbstractComponent implemen
         dateFieldParsers = MapBuilder.<String, DateFieldParser>newMapBuilder()
                 .put("year", new DateFieldParser.YearOfCentury())
                 .put("1y", new DateFieldParser.YearOfCentury())
+                .put("quarter", new DateFieldParser.Quarter())
                 .put("month", new DateFieldParser.MonthOfYear())
                 .put("1m", new DateFieldParser.MonthOfYear())
                 .put("week", new DateFieldParser.WeekOfWeekyear())
@@ -206,7 +206,7 @@ public class DistinctDateHistogramFacetParser extends AbstractComponent implemen
         } else if (distinctFieldMapper.fieldDataType().getType().equals("long"))  {
             IndexNumericFieldData distinctFieldData = context.fieldData().getForField(distinctFieldMapper);
             IndexNumericFieldData keyIndexFieldData = context.fieldData().getForField(keyMapper);
-            return new LongDistinctDateHistogramFacetExecutor(keyIndexFieldData, distinctFieldData, dateTime, interval, comparatorType, context.cacheRecycler());
+            return new LongDistinctDateHistogramFacetExecutor(keyIndexFieldData, distinctFieldData, dateTime, interval, comparatorType, context);
         } else {
             throw new FacetPhaseExecutionException(facetName, "distinct field [" + distinctField + "] is not of type string or long");
         }
@@ -229,6 +229,13 @@ public class DistinctDateHistogramFacetParser extends AbstractComponent implemen
             @Override
             public DateTimeField parse(Chronology chronology) {
                 return chronology.yearOfCentury();
+            }
+        }
+        
+        static class Quarter implements DateFieldParser {
+            @Override
+            public DateTimeField parse(Chronology chronology) {
+                return Joda.QuarterOfYear.getField(chronology);
             }
         }
 

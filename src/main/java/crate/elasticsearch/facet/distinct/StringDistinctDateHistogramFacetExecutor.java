@@ -5,7 +5,6 @@ import org.apache.lucene.util.BytesRef;
 import org.elasticsearch.cache.recycler.CacheRecycler;
 import org.elasticsearch.common.joda.time.MutableDateTime;
 import org.elasticsearch.common.recycler.Recycler;
-import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.index.fielddata.BytesValues;
 import org.elasticsearch.index.fielddata.LongValues;
 import org.elasticsearch.index.fielddata.plain.PackedArrayIndexFieldData;
@@ -17,6 +16,7 @@ import org.elasticsearch.search.facet.terms.strings.HashedAggregator;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import org.elasticsearch.common.hppc.LongObjectOpenHashMap;
 
 /**
  * Collect the distinct values per time interval.
@@ -30,7 +30,7 @@ public class StringDistinctDateHistogramFacetExecutor extends FacetExecutor {
     private MutableDateTime dateTime;
     private final long interval;
     private final DateHistogramFacet.ComparatorType comparatorType;
-    final Recycler.V<ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry>> entries;
+    final Recycler.V<LongObjectOpenHashMap<InternalDistinctDateHistogramFacet.DistinctEntry>> entries;
 
     public StringDistinctDateHistogramFacetExecutor(PackedArrayIndexFieldData keyIndexFieldData,
                                                     PagedBytesIndexFieldData distinctIndexFieldData,
@@ -51,8 +51,16 @@ public class StringDistinctDateHistogramFacetExecutor extends FacetExecutor {
 
     @Override
     public InternalFacet buildFacet(String facetName) {
-        ArrayList<InternalDistinctDateHistogramFacet.DistinctEntry> entries1 = new ArrayList<InternalDistinctDateHistogramFacet.DistinctEntry>(entries.v().valueCollection());
-        entries.release();
+        ArrayList<InternalDistinctDateHistogramFacet.DistinctEntry> entries1 = new ArrayList<InternalDistinctDateHistogramFacet.DistinctEntry>(entries.v().size());
+        final boolean[] states = entries.v().allocated;
+        final Object[] values = entries.v().values;
+        for (int i = 0; i < states.length; i++) {
+            if (states[i]) {
+                InternalDistinctDateHistogramFacet.DistinctEntry value = (InternalDistinctDateHistogramFacet.DistinctEntry) values[i];
+                entries1.add(value);
+            }
+        }
+        entries.close();
         return new StringInternalDistinctDateHistogramFacet(facetName, comparatorType, entries1);
     }
 
@@ -98,11 +106,11 @@ public class StringDistinctDateHistogramFacetExecutor extends FacetExecutor {
         BytesValues.WithOrdinals valueValues;
         private final long interval;
         private MutableDateTime dateTime;
-        final Recycler.V<ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry>> entries;
+        final Recycler.V<LongObjectOpenHashMap<InternalDistinctDateHistogramFacet.DistinctEntry>> entries;
 
         final ValueAggregator valueAggregator = new ValueAggregator();
 
-        public DateHistogramProc(Recycler.V<ExtTLongObjectHashMap<InternalDistinctDateHistogramFacet.DistinctEntry>> entries, MutableDateTime dateTime, long interval) {
+        public DateHistogramProc(Recycler.V<LongObjectOpenHashMap<InternalDistinctDateHistogramFacet.DistinctEntry>> entries, MutableDateTime dateTime, long interval) {
             this.dateTime = dateTime;
             this.entries = entries;
             this.interval = interval;
@@ -112,16 +120,14 @@ public class StringDistinctDateHistogramFacetExecutor extends FacetExecutor {
          * Pass a dateTime to onValue to account for the interval and rounding that is set in the Parser
          */
         public void onDoc(int docId, LongValues values) {
-            if (values.hasValue(docId)) {
-                final LongValues.Iter iter = values.getIter(docId);
-                while (iter.hasNext()) {
-                    dateTime.setMillis(iter.next());
-                    onValue(docId, dateTime);
-                    total++;
-                }
-            } else {
-                missing++;
+            int totalDocumentEntries = values.setDocument(docId);
+            for(int i = 0 ; i < totalDocumentEntries ; i++) {
+                dateTime.setMillis(values.nextValue());
+                onValue(docId, dateTime);
+                total++;
             }
+            if(totalDocumentEntries > 0)
+                missing++;
         }
 
         protected void onValue(int docId, MutableDateTime dateTime) {
