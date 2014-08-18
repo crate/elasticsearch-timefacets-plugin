@@ -81,7 +81,7 @@ public class StringDistinctDateHistogramFacetExecutor extends FacetExecutor {
         @Override
         public void setNextReader(AtomicReaderContext context) throws IOException {
             keyValues = keyIndexFieldData.load(context).getLongValues();
-            histoProc.valueValues = distinctIndexFieldData.load(context).getBytesValues(false);
+            histoProc.valueValues = distinctIndexFieldData.load(context).getBytesValues();
         }
 
         @Override
