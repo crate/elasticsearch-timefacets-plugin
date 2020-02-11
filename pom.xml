@@ -49,7 +49,7 @@
         <repository>
             <id>oss.sonatype.org</id>
             <name>OSS Sonatype</name>
-            <url>http://oss.sonatype.org/content/repositories/releases/</url>
+            <url>https://oss.sonatype.org/content/repositories/releases/</url>
         </repository>
     </repositories>
 
